@@ -1,4 +1,5 @@
 from get_EO_analysis_results import get_EO_analysis_results
+from exploreRaft import exploreRaft
 from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import gridplot, layout
 from bokeh.models import ColumnDataSource
@@ -54,7 +55,7 @@ class plotGoodRaftRuns():
 
     def write_run_plot(self, run=None, site_type=None, raft=None):
 
-        print 'Operating on run ', run
+        print('Operating on run ', run)
 
         g = get_EO_analysis_results(db=self.db, server=self.server)
 
@@ -277,16 +278,18 @@ class plotGoodRaftRuns():
         save(l)
 
 
-    def write_table(self, run_list=None, raft_list=None):
-
+    def write_table(self, run_list=None, raft_list=None, type_list=None):
         data = dict(
                 rafts=raft_list,
-                runs=run_list
+                runs=run_list,
+                types=type_list
                 )
+
         dashboard = ColumnDataSource(data)
 
         columns = [
             TableColumn(field="rafts", title="Raft"),
+            TableColumn(field="types", title="Type"),
             TableColumn(field="runs", title="Run", formatter=
                 HTMLTemplateFormatter(template=
                 "<a href= \
@@ -309,10 +312,12 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--eTserver', default='Dev', help="eTraveler server (default=%(default)s)")
     parser.add_argument('-s', '--site_type', default=None,
                         help="site type (default=%((default)s)"                                                                     "default)s)")
-    parser.add_argument('-o', '--output', default='/Users/richard/LSST/Data/bokeh/',
+    parser.add_argument('-o', '--output', default='/Users/Emily/Desktop/',
                         help="output base directory (default=%(default)s)")
 
     args = parser.parse_args()
+    
+    eR = exploreRaft()
 
     pG = plotGoodRaftRuns(db='Prod', server='Prod', base_dir=args.output)
 
@@ -320,20 +325,25 @@ if __name__ == "__main__":
                 6317, 6350, 6829, 6854, 7192, 7195, 7479, 7652, 7653, 7659, 7660, 7661, 7678,\
                 7983, 7984, 8028, 8404, 8696, 8705, 8746, 8758, 8872]
     run_list, raft_list = pG.make_run_pages(site_type="BNL-Raft", runs=runs_bnl)
-
-    data_table_bnl = pG.write_table(run_list=run_list, raft_list=raft_list)
+    
+    type_list = [eR.raft_type(raft=raft) for raft in raft_list]
+    data_table_bnl = pG.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
     runs_int = [5582, 5730, 5731, 6259, 7046, 7086 ]
     run_list, raft_list = pG.make_run_pages(site_type="I&T-Raft", runs=runs_int)
+    
+    type_list = [eR.raft_type(raft=raft) for raft in raft_list]
 
-    data_table_int = pG.write_table(run_list=run_list, raft_list=raft_list)
+    data_table_int = pG.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
     pG_dev = plotGoodRaftRuns(db='Dev', server='Prod', base_dir=args.output)
 
     runs_int_dev = [5708, 5715, 5867, 5899, 5923, 5941, 5943, 6006 ]
     run_list, raft_list = pG_dev.make_run_pages(site_type="I&T-Raft", runs=runs_int_dev)
 
-    data_table_int_dev = pG_dev.write_table(run_list=run_list, raft_list=raft_list)
+    type_list = [eR.raft_type(raft=raft) for raft in raft_list]
+
+    data_table_int_dev = pG_dev.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
     dash_file = args.output + 'bokehDashboard.html'
     output_file(dash_file)

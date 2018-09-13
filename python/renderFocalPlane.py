@@ -36,6 +36,8 @@ class renderFocalPlane():
         self.current_test = ""
         self.EO_type = "I&T-Raft"
 
+        self.user_hook = None
+
 
         self.emulate_raft_list = []
 
@@ -89,6 +91,8 @@ class renderFocalPlane():
 
     def get_testq(self, run=None, testq=None):
 
+        if self.user_hook is not None:
+            return self.user_hook(run=run)
 
         raft_list, data = self.get_EO.get_tests(site_type=self.EO_type, test_type=testq, run=run)
         res = self.get_EO.get_results(test_type=testq, data=data, device=raft_list)

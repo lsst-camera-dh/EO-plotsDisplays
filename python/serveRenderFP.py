@@ -15,6 +15,14 @@ run_list = [6259, 5731]
 rFP.set_emulation(raft_list, run_list)
 rFP.set_single_raft(choice=True)
 
+def get_bias(run):
+    print ("called user hook with run ", str(run))
+    fake_list = [i*1. for i in range(1,145) ]
+    return fake_list
+
+rFP.user_hook = get_bias
+
+
 l = rFP.render(run=5731, testq="gain")
 
 menu = [('Gain', 'gain'), ('Gain Error', 'gain_error'), ('PSF', 'psf_sigma'),

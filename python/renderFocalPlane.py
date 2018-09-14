@@ -6,7 +6,7 @@ from exploreRaft import exploreRaft
 from  eTraveler.clientAPI.connection import Connection
 
 from bokeh.models import ColumnDataSource, DataRange1d, Plot, LinearAxis, Grid, LogColorMapper, ColorBar, \
-    LogTicker, BasicTicker
+    LogTicker, BasicTicker, TapTool
 from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
@@ -37,6 +37,7 @@ class renderFocalPlane():
         self.EO_type = "I&T-Raft"
 
         self.user_hook = None
+        self.heatmap = None
 
 
         self.emulate_raft_list = []
@@ -162,7 +163,7 @@ class renderFocalPlane():
 
         raft_list = self.get_raft_content()
 
-        TOOLS = "pan,wheel_zoom,reset,hover,save"
+        TOOLS = "pan,wheel_zoom,reset,hover,save,tap"
         color_mapper = LogColorMapper(palette=palette)
         color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(), label_standoff=12,
                             border_line_color=None, location=(0,0))
@@ -171,7 +172,7 @@ class renderFocalPlane():
         if self.single_raft_mode is True:
             fig_title = self.installed_raft_names[10]
 
-        p = figure(
+        self.heatmap = figure(
             title=fig_title, tools=TOOLS, toolbar_location="below",
             tooltips=[
                 ("Raft", "@raft_name"), ("Raft slot", "@raft_slot"), ("CCD slot", "@ccd_slot"),
@@ -179,12 +180,12 @@ class renderFocalPlane():
                 (testq, "@test_q")
             ],
             x_axis_location=None, y_axis_location=None,)
-        p.grid.grid_line_color = None
-        p.hover.point_policy = "follow_mouse"
-        p.add_layout(color_bar,"right")
+        self.heatmap.grid.grid_line_color = None
+        self.heatmap.hover.point_policy = "follow_mouse"
+        self.heatmap.add_layout(color_bar,"right")
 
         if self.single_raft_mode is False:
-            p.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
+            self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
 
         x = []
         y = []
@@ -200,7 +201,7 @@ class renderFocalPlane():
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
             if self.single_raft_mode is False:
-                p.rect(x=[raft_x], y=[raft_y], width=self.raft_width,
+                self.heatmap.rect(x=[raft_x], y=[raft_y], width=self.raft_width,
                     height=self.raft_width, color="blue", fill_alpha=0.)
 
             for ccd in range(9):
@@ -208,7 +209,7 @@ class renderFocalPlane():
                 cen_y = raft_y  - self.ccd_center_y[ccd]
 
                 if self.single_raft_mode is False:
-                    p.rect(x=[cen_x], y=[cen_y], width=self.ccd_width, height=self.ccd_width, color="green",
+                    self.heatmap.rect(x=[cen_x], y=[cen_y], width=self.ccd_width, height=self.ccd_width, color="green",
                        fill_alpha=0.)
 
         for raft in range(21):
@@ -248,10 +249,10 @@ class renderFocalPlane():
                                   ccd_name=ccd_name, ccd_slot=ccd_slot,
                                   amp_number=amp_number, test_q=test_q))
 
-        cm = p.select_one(LogColorMapper)
+        cm = self.heatmap.select_one(LogColorMapper)
         cm.update(low=min(test_q), high=max(test_q))
 
-        p.rect(x='x', y='y', source=self.source, height=self.amp_width, width=self.ccd_width/2.,
+        self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width, width=self.ccd_width/2.,
             color="black",
             fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
 
@@ -261,18 +262,11 @@ class renderFocalPlane():
 
 
 #        l = layout(self.dropdown, row(p,h))
-        l = layout(row(p,h))
+        l = layout(row(self.heatmap,h))
 
 #        show(l)
 
         return l
-
-
-def update_dropdown(sattr, old, new):
-
-    new_test = dropdown.value
-
-    rFP.render(run=1234,testq=new_test)
 
 
 if __name__ == "__main__":

@@ -66,20 +66,19 @@ def update_text_input(sattr, old, new):
 
 text_input.on_change('value', update_text_input)
 
+# note that tap_input is Javascript, not python!
 
 tap_input = """
-}
+console.log("entering tap_input callback", cb_data)
+ind = cb_data.index['1d'].indices[0]
+console.log("tap_input ", ind);
 """
-
-
-#console.log("tap_input ", ind);
-#console.log("entering tap_input callback")
 
 tap = rFP.heatmap.select(type=TapTool)
 
-#ind = cb_data.index['1d'].indices[0]
 
-#tap.callback = CustomJS(code=tap_input)
+
+tap.callback = CustomJS(code=tap_input)
 
 def update_button():
     current_mode = rFP.get_single_raft()

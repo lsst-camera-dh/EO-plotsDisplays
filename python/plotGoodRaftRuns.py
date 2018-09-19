@@ -1,3 +1,4 @@
+from __future__ import print_function
 from get_EO_analysis_results import get_EO_analysis_results
 from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import gridplot, layout
@@ -54,7 +55,7 @@ class plotGoodRaftRuns():
 
     def write_run_plot(self, run=None, site_type=None, raft=None):
 
-        print 'Operating on run ', run
+        print ('Operating on run ', run)
 
         g = get_EO_analysis_results(db=self.db, server=self.server)
 
@@ -318,19 +319,19 @@ if __name__ == "__main__":
 
     runs_bnl = [4390, 4417, 4418, 4576, 4613, 4625, 4626, 5508, 5511, 5634, 5635, 5675, 5761, 6131, 6147,\
                 6317, 6350, 6829, 6854, 7192, 7195, 7479, 7652, 7653, 7659, 7660, 7661, 7678,\
-                7983, 7984, 8028, 8404, 8696, 8705, 8746, 8758, 8872]
+                7983, 7984, 8028, 8404, 8696, 8705, 8746, 8758, 8872, 8887, 9056, 9102, 9119]
     run_list, raft_list = pG.make_run_pages(site_type="BNL-Raft", runs=runs_bnl)
 
     data_table_bnl = pG.write_table(run_list=run_list, raft_list=raft_list)
 
-    runs_int = [5582, 5730, 5731, 6259, 7046, 7086 ]
+    runs_int = [5582, 5730, 5731, 6259, 7046, 7086, 9049, 9211 ]
     run_list, raft_list = pG.make_run_pages(site_type="I&T-Raft", runs=runs_int)
 
     data_table_int = pG.write_table(run_list=run_list, raft_list=raft_list)
 
     pG_dev = plotGoodRaftRuns(db='Dev', server='Prod', base_dir=args.output)
 
-    runs_int_dev = [5708, 5715, 5867, 5899, 5923, 5941, 5943, 6006 ]
+    runs_int_dev = [5708, 5715, 5867, 5899, 5923, 5941, 5943, 6006, 6106 ]
     run_list, raft_list = pG_dev.make_run_pages(site_type="I&T-Raft", runs=runs_int_dev)
 
     data_table_int_dev = pG_dev.write_table(run_list=run_list, raft_list=raft_list)

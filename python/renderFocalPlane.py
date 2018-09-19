@@ -11,6 +11,7 @@ from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models.widgets import TextInput, Dropdown
+from bokeh.models.glyphs import Rect
 
 """
 Create a rendering of the focal plane, composed of science and corner rafts, each made of sensors with 
@@ -37,8 +38,9 @@ class renderFocalPlane():
         self.EO_type = "I&T-Raft"
 
         self.user_hook = None
+        self.tap_cb = None
         self.heatmap = None
-
+        self.heatmap_rect = None
 
         self.emulate_raft_list = []
 
@@ -248,11 +250,13 @@ class renderFocalPlane():
         self.source = ColumnDataSource(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
                                   ccd_name=ccd_name, ccd_slot=ccd_slot,
                                   amp_number=amp_number, test_q=test_q))
+        self.source.on_change('selected', self.tap_cb)
 
         cm = self.heatmap.select_one(LogColorMapper)
         cm.update(low=min(test_q), high=max(test_q))
 
-        self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width, width=self.ccd_width/2.,
+        self.heatmap_rect = self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
+                              width=self.ccd_width/2.,
             color="black",
             fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
 

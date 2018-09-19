@@ -22,6 +22,12 @@ def get_bias(run):
 
 rFP.user_hook = get_bias
 
+def tap_input(attr, old, new):
+    # The index of the selected glyph is : new['1d']['indices'][0]
+    patch_name =  rFP.source.data['raft_name'][new['1d']['indices'][0]]
+    print("TapTool callback executed on Raft {}".format(patch_name))
+
+rFP.tap_cb = tap_input
 
 l = rFP.render(run=5731, testq="gain")
 
@@ -66,19 +72,13 @@ def update_text_input(sattr, old, new):
 
 text_input.on_change('value', update_text_input)
 
-# note that tap_input is Javascript, not python!
 
-tap_input = """
-console.log("entering tap_input callback", cb_data)
-ind = cb_data.index['1d'].indices[0]
-console.log("tap_input ", ind);
-"""
+#rFP.heatmap_rect.data_source.on_change('selected',tap_input)
 
-tap = rFP.heatmap.select(type=TapTool)
+#rFP.source.on_change('selected',tap_input)
 
+#tap = rFP.heatmap.select(type=TapTool)
 
-
-tap.callback = CustomJS(code=tap_input)
 
 def update_button():
     current_mode = rFP.get_single_raft()

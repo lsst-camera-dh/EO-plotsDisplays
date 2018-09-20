@@ -3,6 +3,7 @@ import numpy as np
 from get_EO_analysis_results import get_EO_analysis_results
 from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
+from bokeh.models.glyphs import VBar
 from  eTraveler.clientAPI.connection import Connection
 
 from bokeh.models import ColumnDataSource, DataRange1d, Plot, LinearAxis, Grid, LogColorMapper, ColorBar, \
@@ -13,7 +14,7 @@ from bokeh.layouts import row, layout
 from bokeh.models.widgets import TextInput, Dropdown
 
 """
-Create a rendering of the focal plane, composed of science and corner rafts, each made of sensors with 
+Create a rendering of the focal plane, composed of science and corner rafts, each made of sensors with
 their amplifiers.
 """
 
@@ -158,7 +159,7 @@ class renderFocalPlane():
 
         raft_list = self.get_raft_content()
 
-        TOOLS = "pan,wheel_zoom,reset,hover,save"
+        TOOLS = "pan,wheel_zoom,reset,hover,save,box_select,lasso_select"
         color_mapper = LogColorMapper(palette=palette)
         color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(), label_standoff=12,
                             border_line_color=None, location=(0,0))
@@ -240,7 +241,12 @@ class renderFocalPlane():
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(amp)
 
-        self.source = ColumnDataSource(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
+        h_q, bins = np.histogram(np.array(test_q), bins=50)
+        bin_width = bins[1]-bins[0]
+
+        bin_centers = [bins[i]+bin_width/2 for i in range(len(bins)-1)]
+
+        self.source = ColumnDataSource(dict(x=x, y=y,bins=bin_centers,top=h_q, raft_name=raft_name, raft_slot=raft_slot,
                                   ccd_name=ccd_name, ccd_slot=ccd_slot,
                                   amp_number=amp_number, test_q=test_q))
 
@@ -251,10 +257,21 @@ class renderFocalPlane():
             color="black",
             fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
 
-        h_q, bins = np.histogram(np.array(test_q), bins=50)
-        h = figure(title=testq, tools=TOOLS, toolbar_location="below")
-        h.quad(top=h_q, bottom=0, left=bins[:-1], right=bins[1:], fill_color='blue', fill_alpha=0.2)
+        xdr = DataRange1d()
+        ydr = DataRange1d()
 
+        h = figure(
+        title=None, x_range=xdr, y_range=ydr, plot_width=500, plot_height=500,
+        h_symmetry=False, v_symmetry=False, min_border=0, tools=TOOLS, toolbar_location="below")
+
+        glyph = VBar(x="bins", top="top", bottom=0, width=bin_width, fill_color="#b3de69")
+        h.add_glyph(self.source, glyph)
+
+        xaxis = LinearAxis()
+        yaxis = LinearAxis()
+
+        h.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
+        h.add_layout(Grid(dimension=1, ticker=yaxis.ticker))
 
 #        l = layout(self.dropdown, row(p,h))
         l = layout(row(p,h))
@@ -299,4 +316,3 @@ if __name__ == "__main__":
 
     curdoc().add_root(m)
     curdoc().title = "Focal Plane Heat Map"
-

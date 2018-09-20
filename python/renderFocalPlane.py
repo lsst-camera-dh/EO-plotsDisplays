@@ -197,22 +197,23 @@ class renderFocalPlane():
         ccd_slot = []
         amp_number = []
         test_q = []
+        raft_x_list = []
+        raft_y_list = []
+        cen_x_list = []
+        cen_y_list = []
 
         for raft in range(21):
 
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
-            if self.single_raft_mode is False:
-                self.heatmap.rect(x=[raft_x], y=[raft_y], width=self.raft_width,
-                    height=self.raft_width, color="blue", fill_alpha=0.)
+            raft_x_list.append(raft_x)
+            raft_y_list.append(raft_y)
 
             for ccd in range(9):
                 cen_x = raft_x  + self.ccd_center_x[ccd]
                 cen_y = raft_y  - self.ccd_center_y[ccd]
-
-                if self.single_raft_mode is False:
-                    self.heatmap.rect(x=[cen_x], y=[cen_y], width=self.ccd_width, height=self.ccd_width, color="green",
-                       fill_alpha=0.)
+                cen_x_list.append(cen_x)
+                cen_y_list.append(cen_y)
 
         for raft in range(21):
 
@@ -246,6 +247,13 @@ class renderFocalPlane():
                     ccd_name.append(ccd_list[ccd][0])
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(amp)
+
+        if self.single_raft_mode is False:
+            self.heatmap.rect(x=raft_x_list, y=raft_y_list, width=self.raft_width,
+                              height=self.raft_width, color="blue", fill_alpha=0.)
+            self.heatmap.rect(x=cen_x_list, y=cen_y_list, width=self.ccd_width, height=self.ccd_width,
+                              color="green",
+                              fill_alpha=0.)
 
         self.source = ColumnDataSource(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
                                   ccd_name=ccd_name, ccd_slot=ccd_slot,

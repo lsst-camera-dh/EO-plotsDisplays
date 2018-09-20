@@ -13,7 +13,7 @@ raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 #    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
 run_list = [6259, 5731]
 rFP.set_emulation(raft_list, run_list)
-rFP.set_single_raft(choice=True)
+rFP.set_single_raft(choice=False)
 
 def get_bias(run):
     print ("called user hook with run ", str(run))

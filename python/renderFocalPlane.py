@@ -36,6 +36,8 @@ class renderFocalPlane():
         self.emulated_runs = [0]*21
 
         self.single_raft_name = []
+        self.single_raft_run = None
+        self.single_ccd_name = []
 
         self.source = ColumnDataSource()
         self.current_run = 0
@@ -110,6 +112,9 @@ class renderFocalPlane():
 
     def get_testq(self, run=None, testq=None):
 
+        if self.emulate is True and (self.single_raft_mode is True or self.single_ccd_mode is True):
+            run = self.single_raft_run
+
         if self.user_hook is not None and testq == "User":
             return self.user_hook(run=run)
 
@@ -118,6 +123,8 @@ class renderFocalPlane():
 
         test_list = []
         for ccd in res:
+            if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
+                continue
             test_list.extend(res[ccd])
 
         return test_list
@@ -125,16 +132,21 @@ class renderFocalPlane():
     def get_raft_content(self):
 
         if self.emulate is False:
-            raft_list = self.eFP.focalPlaneContents()
-        else:
-            if self.solo_raft_mode is True:
+            if self.full_FP_mode is True:
+                raft_list = self.eFP.focalPlaneContents()
+            elif self.solo_raft_mode is True:
                 run = self.current_run
                 run_info = self.connect.getRunResults(run=run)
                 raft_list = [[run_info['experimentSN'], "R22"]]
-            elif self.single_raft_mode is True:
+                print ("testq ", raft_list, run)
+            elif self.single_raft_mode is True or self.single_ccd_mode is True:
+                print ("raft content ", raft_list)
                 raft_list = self.single_raft_name
-            else:
-                raft_list = self.emulate_raft_list
+        else:
+            raft_list = self.emulate_raft_list
+            if self.single_raft_mode is True or self.single_ccd_mode is True:
+                print ("raft content ", raft_list)
+                raft_list = self.single_raft_name
 
         for j in range(21):
             self.installed_raft_names[j] = ""
@@ -171,6 +183,16 @@ class renderFocalPlane():
     def get_current_test(self):
         return self.current_test
 
+    def get_emulated_raft_info(self, raft=None):
+        run = None
+        slot = None
+        for idx, r in enumerate(self.emulate_raft_list):
+            if raft == r[0]:
+                slot = r[1]
+                run = self.emulate_run_list[idx]
+        return slot, run
+
+
     def render(self, run=None, testq=None):
 
         self.current_run = run
@@ -190,8 +212,10 @@ class renderFocalPlane():
                             border_line_color=None, location=(0,0))
 
         fig_title = "Focal Plane"
-        if self.single_raft_mode is True:
+        if self.single_raft_mode is True or self.solo_raft_mode is True:
             fig_title = self.single_raft_name[0][0]
+        elif self.single_ccd_mode is True:
+            fig_title = self.single_ccd_name[0][0]
 
         self.heatmap = figure(
             title=fig_title, tools=TOOLS, toolbar_location="below",
@@ -245,12 +269,23 @@ class renderFocalPlane():
 
             test_q.extend(self.get_testq(run=run_q, testq=testq))
 
-            ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft])
+            num_ccd = 9
+            if self.single_ccd_mode is False:
+                single_run = run
+                if self.emulate is True:
+                     _, single_run = self.get_emulated_raft_info(self.installed_raft_names[raft])
+                run_info = self.connect.getRunSummary(run=single_run)
+                run_time = run_info['begin']
+                print ("render ", self.installed_raft_names[raft], single_run)
+                ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft], when=run_time)
+            else:
+                ccd_list = self.single_ccd_name
+                num_ccd = 1
 
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
 
-            for ccd in range(9):
+            for ccd in range(num_ccd):
 
                 for amp in range(16):
                     cen_x = raft_x + self.ccd_center_x[ccd]

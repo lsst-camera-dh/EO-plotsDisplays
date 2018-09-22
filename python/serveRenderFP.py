@@ -17,7 +17,7 @@ rFP = renderFocalPlane()
 
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 #    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
-run_list = [6259, 5731]
+run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
 def get_bias(run):
@@ -29,12 +29,25 @@ rFP.user_hook = get_bias
 
 def tap_input(attr, old, new):
     # The index of the selected glyph is : new['1d']['indices'][0]
-    if rFP.single_raft_mode is True:
-        raft_name = rFP.source.data['raft_name'][new['1d']['indices'][0]]
-        raft_slot = rFP.source.data['raft_slot'][new['1d']['indices'][0]]
-        rFP.single_raft_name =  [[raft_name, raft_slot]]
+    raft_name = rFP.source.data['raft_name'][new['1d']['indices'][0]]
+    raft_slot = rFP.source.data['raft_slot'][new['1d']['indices'][0]]
+    ccd_name = rFP.source.data['ccd_name'][new['1d']['indices'][0]]
+    ccd_slot = rFP.source.data['ccd_slot'][new['1d']['indices'][0]]
 
-        l_new = rFP.render(run=rFP.get_current_run(), testq='gain')
+    if rFP.single_raft_mode is True:
+        rFP.single_raft_name =  [[raft_name, raft_slot]]
+        _, rFP.single_raft_run = rFP.get_emulated_raft_info(rFP.single_raft_name[0][0])
+
+        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
+
+    if rFP.single_ccd_mode is True:
+        rFP.single_raft_name =  [[raft_name, raft_slot]]
+        rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
+        _, rFP.single_raft_run = rFP.get_emulated_raft_info(rFP.single_raft_name[0][0])
+
+        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
@@ -46,12 +59,14 @@ l = rFP.render(run=5731, testq="gain")
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
 
 menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
-              ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft"),
-              ("Solo CCD", "Solo CCD")]
+              ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft")]
+
 drop_modes = Dropdown(label="Mode: Full Focal Plane", button_type="success", menu=menu_modes)
 
 #slider = Slider(start=0, end=10, value=10, step=.1, title="Stuff")
 text_input = TextInput(value=str(rFP.get_current_run()), title="Select Run")
+if rFP.emulate is True:
+    text_input.title="Select Run Disabled"
 
 button = Button(label="Emulate Mode", button_type="success")
 button_file = Button(label="Upload Emulation Config", button_type="success")
@@ -80,7 +95,8 @@ def update_dropdown_modes(sattr, old, new):
 
     if new_mode == "Full Focal Plane":
         rFP.full_FP_mode = True
-        l_new = rFP.render(run=rFP.get_current_run(), testq='gain')
+        rFP.emulate = True  # no real run data yet!
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
@@ -90,7 +106,9 @@ def update_dropdown_modes(sattr, old, new):
         rFP.single_ccd_mode = True
     elif new_mode == "Solo Raft":
         rFP.solo_raft_mode = True
-        rFP.emulate_raft_list = False
+        rFP.emulate = False
+        button.label = "Run Mode"
+        text_input.title= "Select Run"
 
     drop_modes.label = "Mode: " + new_mode
 
@@ -98,7 +116,7 @@ drop_modes.on_change('value', update_dropdown_modes)
 
 
 def update_text_input(sattr, old, new):
-    if rFP.emulate_raft_list is False:
+    if rFP.emulate is False:
         text_input.title = "Select Run"
         new_run = text_input.value
 
@@ -118,6 +136,10 @@ def update_button():
     rFP.emulate_raft_list = new_mode
     if new_mode is True:
         button.label = "Emulate Mode"
+        l_new_run = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+        m_new_run = layout(interactors, l_new_run)
+        m.children = m_new_run.children
+
     else:
         button.label = 'Run Mode'
 

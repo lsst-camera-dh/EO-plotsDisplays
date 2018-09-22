@@ -13,7 +13,6 @@ raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 #    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
 run_list = [6259, 5731]
 rFP.set_emulation(raft_list, run_list)
-rFP.set_single_raft(choice=False)
 
 def get_bias(run):
     print ("called user hook with run ", str(run))
@@ -24,74 +23,83 @@ rFP.user_hook = get_bias
 
 def tap_input(attr, old, new):
     # The index of the selected glyph is : new['1d']['indices'][0]
-    patch_name =  rFP.source.data['raft_name'][new['1d']['indices'][0]]
-    print("TapTool callback executed on Raft {}".format(patch_name))
+    if rFP.single_raft_mode is True:
+        raft_name = rFP.source.data['raft_name'][new['1d']['indices'][0]]
+        raft_slot = rFP.source.data['raft_slot'][new['1d']['indices'][0]]
+        rFP.single_raft_name =  [[raft_name, raft_slot]]
+
+        l_new = rFP.render(run=rFP.get_current_run(), testq='gain')
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
+
 
 rFP.tap_cb = tap_input
 
 l = rFP.render(run=5731, testq="gain")
 
-menu = [('Gain', 'gain'), ('Gain Error', 'gain_error'), ('PSF', 'psf_sigma'),
-        ("Read Noise", 'read_noise'), ('System Noise', 'system_noise'),
-        ('Total Noise', 'total_noise'), ('Bright Pixels', 'bright_pixels'),
-        ('Bright Columns', 'bright_columns'), ('Dark Pixels', 'dark_pixels'),
-        ('Dark Columns', 'dark_columns'), ("Traps", 'num_traps'),
-        ('CTI Low Serial', 'cti_low_serial'), ('CTI High Serial', 'cti_high_serial'),
-        ('CTI Low Parallel', 'cti_low_parallel'), ('CTI High Parallel', 'cti_high_parallel'),
-        ('Dark Current 95CL', 'dark_current_95CL'),
-        ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
-        ('Nonlinearity', 'max_frac_dev')]
+drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
 
-drop = Dropdown(label="Select test", button_type="warning", menu=menu)
+menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
+              ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft"),
+              ("Solo CCD", "Solo CCD")]
+drop_modes = Dropdown(label="Mode: Full Focal Plane", button_type="success", menu=menu_modes)
 
 #slider = Slider(start=0, end=10, value=10, step=.1, title="Stuff")
 text_input = TextInput(value=str(rFP.get_current_run()), title="Select Run")
 
-button = Button(label="Single Raft Mode", button_type="success")
-
-interactors = layout(row(text_input, drop, button))
+interactors = layout(row(text_input, drop_test, drop_modes))
 
 m = layout(interactors, l)
 
 
-def update_dropdown(sattr, old, new):
-    new_test = drop.value
+def update_dropdown_test(sattr, old, new):
+    new_test = drop_test.value
 
     l_new = rFP.render(run=rFP.get_current_run(), testq=new_test)
     m_new = layout(interactors, l_new)
     m.children = m_new.children
 
-drop.on_change('value', update_dropdown)
+drop_test.on_change('value', update_dropdown_test)
+
+def update_dropdown_modes(sattr, old, new):
+    new_mode = drop_modes.value
+
+    rFP.single_raft_mode = False
+    rFP.single_ccd_mode = False
+    rFP.solo_raft_mode = False
+    rFP.full_FP_mode = False
+
+    if new_mode == "Full Focal Plane":
+        rFP.full_FP_mode = True
+        l_new = rFP.render(run=rFP.get_current_run(), testq='gain')
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
+
+    elif new_mode == "FP single raft":
+        rFP.single_raft_mode = True
+    elif new_mode == "FP single CCD":
+        rFP.single_ccd_mode = True
+    elif new_mode == "Solo Raft":
+        rFP.solo_raft_mode = True
+
+    drop_modes.label = "Mode: " + new_mode
+
+drop_modes.on_change('value', update_dropdown_modes)
+
 
 def update_text_input(sattr, old, new):
-    new_run = text_input.value
+    if rFP.emulate_raft_list is False:
+        text_input.title = "Select Run"
+        new_run = text_input.value
 
-    l_new_run = rFP.render(run=new_run, testq=rFP.get_current_test())
-    m_new_run = layout(interactors, l_new_run)
-    m.children = m_new_run.children
+        l_new_run = rFP.render(run=new_run, testq=rFP.get_current_test())
+        m_new_run = layout(interactors, l_new_run)
+        m.children = m_new_run.children
+    else:
+        text_input.title = "Select Run Disabled"
+
 
 text_input.on_change('value', update_text_input)
-
-
-#rFP.heatmap_rect.data_source.on_change('selected',tap_input)
-
-#rFP.source.on_change('selected',tap_input)
-
-#tap = rFP.heatmap.select(type=TapTool)
-
-
-def update_button():
-    current_mode = rFP.get_single_raft()
-    new_mode = not current_mode
-
-    rFP.set_single_raft(choice=new_mode)
-    if new_mode is True:
-        button.label = "Single Raft Mode"
-    else:
-        button.label = 'Focal Plane Mode'
-
-button.on_click(update_button)
-
 
 curdoc().add_root(m)
 curdoc().title = "Focal Plane Heat Map"

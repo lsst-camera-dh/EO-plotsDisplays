@@ -28,9 +28,14 @@ class renderFocalPlane():
         self.raft_width = 3.
 
         self.single_raft_mode = False
+        self.single_ccd_mode = False
+        self.solo_raft_mode = False
+        self.full_FP_mode = True
         self.emulate = False
         self.emulate_run_list = []
         self.emulated_runs = [0]*21
+
+        self.single_raft_name = []
 
         self.source = ColumnDataSource()
         self.current_run = 0
@@ -43,6 +48,17 @@ class renderFocalPlane():
         self.heatmap_rect = None
 
         self.emulate_raft_list = []
+
+        self.menu_test = [('Gain', 'gain'), ('Gain Error', 'gain_error'), ('PSF', 'psf_sigma'),
+                     ("Read Noise", 'read_noise'), ('System Noise', 'system_noise'),
+                     ('Total Noise', 'total_noise'), ('Bright Pixels', 'bright_pixels'),
+                     ('Bright Columns', 'bright_columns'), ('Dark Pixels', 'dark_pixels'),
+                     ('Dark Columns', 'dark_columns'), ("Traps", 'num_traps'),
+                     ('CTI Low Serial', 'cti_low_serial'), ('CTI High Serial', 'cti_high_serial'),
+                     ('CTI Low Parallel', 'cti_low_parallel'), ('CTI High Parallel', 'cti_high_parallel'),
+                     ('Dark Current 95CL', 'dark_current_95CL'),
+                     ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
+                     ('Nonlinearity', 'max_frac_dev')]
 
         self.raft_slot_names = ["R14", "R24", "R34",
                                 "R03", "R13", "R23", "R33", "R43",
@@ -94,7 +110,7 @@ class renderFocalPlane():
 
     def get_testq(self, run=None, testq=None):
 
-        if self.user_hook is not None:
+        if self.user_hook is not None and testq == "User":
             return self.user_hook(run=run)
 
         raft_list, data = self.get_EO.get_tests(site_type=self.EO_type, test_type=testq, run=run)
@@ -111,10 +127,12 @@ class renderFocalPlane():
         if self.emulate is False:
             raft_list = self.eFP.focalPlaneContents()
         else:
-            if self.single_raft_mode is True:
+            if self.solo_raft_mode is True:
                 run = self.current_run
                 run_info = self.connect.getRunResults(run=run)
                 raft_list = [[run_info['experimentSN'], "R22"]]
+            elif self.single_raft_mode is True:
+                raft_list = self.single_raft_name
             else:
                 raft_list = self.emulate_raft_list
 
@@ -133,18 +151,19 @@ class renderFocalPlane():
 
         return raft_list
 
-    def set_single_raft(self, choice=True):
-        self.single_raft_mode = choice
-
-    def get_single_raft(self):
-        return self.single_raft_mode
-
     def set_emulation(self, raft_list, run_list):
 
         self.emulate = True
 
         self.emulate_raft_list = raft_list
         self.emulate_run_list = run_list
+
+        self.menu_test.append(("User Supplied", "User"))
+
+    def disable_emulation(self):
+
+        self.emulate = False
+        self.menu_test.remove(("User Supplied", "User"))
 
     def get_current_run(self):
         return self.current_run
@@ -221,7 +240,7 @@ class renderFocalPlane():
                 continue
 
             run_q = run
-            if self.emulate is True and self.single_raft_mode is False:
+            if self.emulate is True and self.full_FP_mode is True:
                 run_q = self.emulated_runs[raft]
 
             test_q.extend(self.get_testq(run=run_q, testq=testq))
@@ -248,7 +267,7 @@ class renderFocalPlane():
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(amp)
 
-        if self.single_raft_mode is False:
+        if self.full_FP_mode is True:
             self.heatmap.rect(x=raft_x_list, y=raft_y_list, width=self.raft_width,
                               height=self.raft_width, color="blue", fill_alpha=0.)
             self.heatmap.rect(x=cen_x_list, y=cen_y_list, width=self.ccd_width, height=self.ccd_width,

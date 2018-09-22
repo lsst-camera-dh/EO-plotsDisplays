@@ -191,7 +191,7 @@ class renderFocalPlane():
 
         fig_title = "Focal Plane"
         if self.single_raft_mode is True:
-            fig_title = self.installed_raft_names[10]
+            fig_title = self.single_raft_name[0][0]
 
         self.heatmap = figure(
             title=fig_title, tools=TOOLS, toolbar_location="below",
@@ -205,7 +205,7 @@ class renderFocalPlane():
         self.heatmap.hover.point_policy = "follow_mouse"
         self.heatmap.add_layout(color_bar,"right")
 
-        if self.single_raft_mode is False:
+        if self.full_FP_mode is True:
             self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
 
         x = []

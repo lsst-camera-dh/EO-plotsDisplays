@@ -12,7 +12,9 @@ except ImportError:
 import base64
 import pandas
 
-
+"""
+Driver for renderFocalPlane.py - defines interactors and requests the display to be produced
+"""
 rFP = renderFocalPlane()
 
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
@@ -21,6 +23,11 @@ run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
 def get_bias(run):
+    """
+    User hook for test quantity
+    :param run: run number
+    :return: list of user-supplied quantities to be included in the heat map
+    """
     print ("called user hook with run ", str(run))
     fake_list = [i*1. for i in range(1,145) ]
     return fake_list
@@ -28,24 +35,33 @@ def get_bias(run):
 rFP.user_hook = get_bias
 
 def tap_input(attr, old, new):
+    """
+    Handle the click in the heatmap. Does nothing if in full Focal Plane mode
+    :param attr:
+    :param old: previous value of rFP.source
+    :param new: new value of rFP.source
+    :return: nothing
+    """
     # The index of the selected glyph is : new['1d']['indices'][0]
     raft_name = rFP.source.data['raft_name'][new['1d']['indices'][0]]
     raft_slot = rFP.source.data['raft_slot'][new['1d']['indices'][0]]
     ccd_name = rFP.source.data['ccd_name'][new['1d']['indices'][0]]
     ccd_slot = rFP.source.data['ccd_slot'][new['1d']['indices'][0]]
 
-    if rFP.single_raft_mode is True:
-        rFP.single_raft_name =  [[raft_name, raft_slot]]
+    rFP.single_raft_name = [[raft_name, raft_slot]]
+    if rFP.emulate is True:
         _, rFP.single_raft_run = rFP.get_emulated_raft_info(rFP.single_raft_name[0][0])
+    else:
+        rFP.single_raft_run = rFP.get_current_run
+
+    if rFP.single_raft_mode is True:
 
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
     if rFP.single_ccd_mode is True:
-        rFP.single_raft_name =  [[raft_name, raft_slot]]
         rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
-        _, rFP.single_raft_run = rFP.get_emulated_raft_info(rFP.single_raft_name[0][0])
 
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
@@ -54,20 +70,24 @@ def tap_input(attr, old, new):
 
 rFP.tap_cb = tap_input
 
+# start up with a nominal run number and test name
 l = rFP.render(run=5731, testq="gain")
 
+# drop down menu of test names, taking the menu from rFP.menu_test
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
 
+# set up the dropdown menu for modes, along with available modes list
 menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
               ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft")]
 
 drop_modes = Dropdown(label="Mode: Full Focal Plane", button_type="success", menu=menu_modes)
 
-#slider = Slider(start=0, end=10, value=10, step=.1, title="Stuff")
+# set up run number text box - disable it in emulate mode
 text_input = TextInput(value=str(rFP.get_current_run()), title="Select Run")
 if rFP.emulate is True:
     text_input.title="Select Run Disabled"
 
+# define buttons to toggle emulation mode, and to fetch a config txt file
 button = Button(label="Emulate Mode", button_type="success")
 button_file = Button(label="Upload Emulation Config", button_type="success")
 
@@ -104,6 +124,7 @@ def update_dropdown_modes(sattr, old, new):
         rFP.single_raft_mode = True
     elif new_mode == "FP single CCD":
         rFP.single_ccd_mode = True
+    # in solo mode, ensure run selecton is re-enabled
     elif new_mode == "Solo Raft":
         rFP.solo_raft_mode = True
         rFP.emulate = False
@@ -145,7 +166,8 @@ def update_button():
 
 button.on_click(update_button)
 
-
+# readining in the emulation config file depends on two callbacks - one triggering reading the file into the
+# ColumnDataSource, coupled with looking for a change on the ColumnDataSource
 file_source = ColumnDataSource({'file_contents':[], 'file_name':[]})
 
 def file_callback(attr,old,new):
@@ -161,7 +183,6 @@ def file_callback(attr,old,new):
 
         slot = raft_frame.loc[raft, "slot"]
         run = raft_frame.loc[raft, "run"]
-        print("raft, slot, run = ", raft, slot, run)
         raft_list.append([raft, slot])
         run_list.append(run)
 

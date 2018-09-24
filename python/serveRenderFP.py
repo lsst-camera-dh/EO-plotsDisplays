@@ -91,7 +91,7 @@ if rFP.emulate is True:
 button = Button(label="Emulate Mode", button_type="success")
 button_file = Button(label="Upload Emulation Config", button_type="success")
 
-interactors = layout(row(text_input, drop_test, drop_modes,button, button_file))
+interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
 
 m = layout(interactors, l)
 

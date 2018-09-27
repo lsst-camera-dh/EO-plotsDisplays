@@ -492,7 +492,7 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--eTserver', default='Dev', help="eTraveler server (default=%(default)s)")
     parser.add_argument('-s', '--site_type', default=None,
                         help="site type (default=%((default)s)"                                                                     "default)s)")
-    parser.add_argument('-o', '--output', default='/Users/Emily/Desktop/EO-plotsDisplays/',
+    parser.add_argument('-o', '--output', default='/Users/richard/LSST/Data/bokeh/',
                         help="output base directory (default=%(default)s)")
 
     args = parser.parse_args()

@@ -367,7 +367,6 @@ class renderFocalPlane():
         #Using numpy to get the index of the bins to which the value is assigned
         bin_indices = np.digitize(np.array(test_q),bins,right=True)
         top = [h_q[bin_index-1] for bin_index in bin_indices]
-        bin_centers = np.digitize(np.array(test_q),bins)
 
         self.source = ColumnDataSource(dict(x=x, y=y, bins=bin_indices, top=top, raft_name=raft_name,
                                   raft_slot=raft_slot,
@@ -384,6 +383,7 @@ class renderFocalPlane():
             fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
         xdr = DataRange1d()
         ydr = DataRange1d()
+
 
         h = figure(
             title=testq, x_range=xdr, y_range=ydr, plot_width=500, plot_height=500,

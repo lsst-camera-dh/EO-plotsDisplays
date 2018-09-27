@@ -364,9 +364,9 @@ class renderFocalPlane():
                               fill_alpha=0.)
 
         h_q, bins = np.histogram(np.array(test_q), bins=50)
+        #Using numpy to get the index of the bins to which the value is assigned
         bin_indices = np.digitize(np.array(test_q),bins,right=True)
         top = [h_q[bin_index-1] for bin_index in bin_indices]
-        #bin_width = bins[1]-bins[0]
         bin_centers = np.digitize(np.array(test_q),bins)
 
         self.source = ColumnDataSource(dict(x=x, y=y, bins=bin_indices, top=top, raft_name=raft_name,
@@ -382,12 +382,6 @@ class renderFocalPlane():
                               width=self.ccd_width/2.,
             color="black",
             fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
-
-        """"
-        h_q, bins = np.histogram(np.array(test_q), bins=50)
-        h = figure(title=testq, tools=TOOLS, toolbar_location="below")
-        h.quad(top=h_q, bottom=0, left=bins[:-1], right=bins[1:], fill_color='blue', fill_alpha=0.2)
-        """
         xdr = DataRange1d()
         ydr = DataRange1d()
 

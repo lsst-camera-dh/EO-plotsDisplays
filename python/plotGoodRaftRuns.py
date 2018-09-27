@@ -501,15 +501,15 @@ if __name__ == "__main__":
 
     pG = plotGoodRaftRuns(db='Prod', server='Prod', base_dir=args.output)
 
-    runs_bnl = [4390, 4417, 4418, 4576, 4613, 4625, 4626, 5508, 5511, 5634, 5635, 5675, 5761, 6131, 6147,
-                6317, 6350, 6829, 6854, 7192, 7195, 7479, 7652, 7653, 7659, 7660, 7661, 7678,
-                7983, 7984, 8028, 8404, 8696, 8705, 8746, 8758, 8872]
+    runs_bnl = [4390]#, 4417, 4418, 4576, 4613, 4625, 4626, 5508, 5511, 5634, 5635, 5675, 5761, 6131, 6147,
+                #6317, 6350, 6829, 6854, 7192, 7195, 7479, 7652, 7653, 7659, 7660, 7661, 7678,
+                #7983, 7984, 8028, 8404, 8696, 8705, 8746, 8758, 8872]
     run_list, raft_list = pG.make_run_pages(site_type="BNL-Raft", runs=runs_bnl)
 
     type_list = [eR_prod.raft_type(raft=raft) for raft in raft_list]
     data_table_bnl = pG.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
-    runs_int = [5582, 5730, 5731, 6259, 7046, 7086 ]
+    runs_int = [5582]#, 5730, 5731, 6259, 7046, 7086 ]
     run_list, raft_list = pG.make_run_pages(site_type="I&T-Raft", runs=runs_int)
 
     type_list = [eR_prod.raft_type(raft=raft) for raft in raft_list]
@@ -518,7 +518,7 @@ if __name__ == "__main__":
 
     pG_dev = plotGoodRaftRuns(db='Dev', server='Prod', base_dir=args.output)
 
-    runs_int_dev = [5708, 5715, 5867, 5899, 5923, 5941, 5943, 6006 ]
+    runs_int_dev = [5708]#, 5715, 5867, 5899, 5923, 5941, 5943, 6006 ]
     run_list, raft_list = pG_dev.make_run_pages(site_type="I&T-Raft", runs=runs_int_dev)
 
     type_list = [eR_dev.raft_type(raft=raft) for raft in raft_list]

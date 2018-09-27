@@ -1,11 +1,13 @@
 from __future__ import print_function
 from get_EO_analysis_results import get_EO_analysis_results
+from exploreRaft import exploreRaft
 from bokeh.plotting import figure, output_file, show, save
 from bokeh.layouts import gridplot, layout
 from bokeh.models import ColumnDataSource
 from bokeh.layouts import widgetbox
 from bokeh.models.widgets import Panel, Tabs, PreText, DataTable, TableColumn, HTMLTemplateFormatter
 from  eTraveler.clientAPI.connection import Connection
+from bokeh.models import Span, Label
 import argparse
 
 class plotGoodRaftRuns():
@@ -224,32 +226,210 @@ class plotGoodRaftRuns():
         qe_y = figure(tools=TOOLS, title="QE: y band", x_axis_label='sensor', y_axis_label='QE')
 
         # add a line renderer with legend and line thickness
+        #sensor_lines = [sensor_start, sensor_end, sensor_third]
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         p.circle('x', 'gain', source=source, legend="Gain: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            p.add_layout(sensor_line)
+
+        my_label = Label(x=0, y=10, text='S00')
+        p.add_layout(my_label)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         ptc.circle('x','ptc', source=source, legend="ptc Gain: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            ptc.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         psf.circle('x','psf', source=source, legend="PSF: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            psf.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         rn.circle('x','rn', source=source, legend="Read Noise: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            rn.add_layout(sensor_line)
 
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         cls.circle('x','cls', source=source, legend="CTI low serial: Run " + str(run), line_width=2)
-        chs.circle('x','chs', source=source, legend="CTI high serial: Run " + str(run), line_width=2)
-        clp.circle('x','clp', source=source, legend="CTI low parallel: Run " + str(run), line_width=2)
-        chp.circle('x','chp', source=source, legend="CTI high parallel: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            cls.add_layout(sensor_line)
 
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
+        chs.circle('x','chs', source=source, legend="CTI high serial: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            chs.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
+        clp.circle('x','clp', source=source, legend="CTI low parallel: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            clp.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
+        chp.circle('x','chp', source=source, legend="CTI high parallel: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            chp.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         bp.circle('x','bp', source=source, legend="Bright Pixels: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            bp.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         bc.circle('x','bc', source=source, legend="Bright Columns: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            bc.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         dp.circle('x','dp', source=source, legend="Dark Pixels: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            dp.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         dc.circle('x','dc', source=source, legend="Dark Columns: Run " + str(run), line_width=2)
+
+        for sensor_line in sensor_lines:
+            dc.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         tp.circle('x','tp', source=source, legend="Traps: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            tp.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
 
         drkC.circle('x','drkC', source=source, legend="Dark Current: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            drkC.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         fw.circle('x','fw', source=source, legend="Full Well: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            fw.add_layout(sensor_line)
+
+        sensor_lines = []
+        for i in range(0,160,16):
+            sensor_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         nonl.circle('x','nonl', source=source, legend="Non-linearity: Run " + str(run), line_width=2)
+        for sensor_line in sensor_lines:
+            nonl.add_layout(sensor_line)
+
+        raft_lines = []
+        for i in range(0,9,1):
+            raft_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
 
         qe_u.circle('x','u', source=source_qe, legend="QE u band: Run " + str(run), line_width=2)
+        for raft_line in raft_lines:
+            qe_u.add_layout(raft_line)
+
+        raft_lines = []
+        for i in range(0,9,1):
+            raft_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         qe_g.circle('x','g', source=source_qe, legend="QE g band: Run " + str(run), line_width=2)
+        for raft_line in raft_lines:
+            qe_g.add_layout(raft_line)
+
+        raft_lines = []
+        for i in range(0,9,1):
+            raft_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         qe_r.circle('x','r', source=source_qe, legend="QE r band: Run " + str(run), line_width=2)
+        for raft_line in raft_lines:
+            qe_r.add_layout(raft_line)
+
+        raft_lines = []
+        for i in range(0,9,1):
+            raft_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         qe_i.circle('x','i', source=source_qe, legend="QE i band: Run " + str(run), line_width=2)
+        for raft_line in raft_lines:
+            qe_i.add_layout(raft_line)
+
+        raft_lines = []
+        for i in range(0,9,1):
+            raft_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         qe_z.circle('x','z', source=source_qe, legend="QE z band: Run " + str(run), line_width=2)
+        for raft_line in raft_lines:
+            qe_z.add_layout(raft_line)
+
+        raft_lines = []
+        for i in range(0,9,1):
+            raft_lines.append(Span(location=i,
+                                  dimension='height', line_color='grey',
+                                  line_dash='dashed', line_width=3))
         qe_y.circle('x','y', source=source_qe, legend="QE y band: Run " + str(run), line_width=2)
+        for raft_line in raft_lines:
+            qe_y.add_layout(raft_line)
 
 
         # NEW: put the subplots in a gridplot
@@ -278,16 +458,18 @@ class plotGoodRaftRuns():
         save(l)
 
 
-    def write_table(self, run_list=None, raft_list=None):
-
+    def write_table(self, run_list=None, raft_list=None, type_list=None):
         data = dict(
                 rafts=raft_list,
-                runs=run_list
+                runs=run_list,
+                types=type_list
                 )
+
         dashboard = ColumnDataSource(data)
 
         columns = [
             TableColumn(field="rafts", title="Raft"),
+            TableColumn(field="types", title="Type"),
             TableColumn(field="runs", title="Run", formatter=
                 HTMLTemplateFormatter(template=
                 "<a href= \
@@ -315,6 +497,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    eR_prod = exploreRaft(db='Prod')
+    eR_dev = exploreRaft(db='Dev')
+
     pG = plotGoodRaftRuns(db='Prod', server='Prod', base_dir=args.output)
 
     runs_bnl = [4390, 4417, 4418, 4576, 4613, 4625, 4626, 5508, 5511, 5634, 5635, 5675, 5761, 6131, 6147,\
@@ -322,19 +507,24 @@ if __name__ == "__main__":
                 7983, 7984, 8028, 8404, 8696, 8705, 8746, 8758, 8872, 8887, 9056, 9102, 9119]
     run_list, raft_list = pG.make_run_pages(site_type="BNL-Raft", runs=runs_bnl)
 
-    data_table_bnl = pG.write_table(run_list=run_list, raft_list=raft_list)
+    type_list = [eR_prod.raft_type(raft=raft) for raft in raft_list]
+    data_table_bnl = pG.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
     runs_int = [5582, 5730, 5731, 6259, 7046, 7086, 9049, 9211 ]
     run_list, raft_list = pG.make_run_pages(site_type="I&T-Raft", runs=runs_int)
 
-    data_table_int = pG.write_table(run_list=run_list, raft_list=raft_list)
+    type_list = [eR_prod.raft_type(raft=raft) for raft in raft_list]
+
+    data_table_int = pG.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
     pG_dev = plotGoodRaftRuns(db='Dev', server='Prod', base_dir=args.output)
 
     runs_int_dev = [5708, 5715, 5867, 5899, 5923, 5941, 5943, 6006, 6106 ]
     run_list, raft_list = pG_dev.make_run_pages(site_type="I&T-Raft", runs=runs_int_dev)
 
-    data_table_int_dev = pG_dev.write_table(run_list=run_list, raft_list=raft_list)
+    type_list = [eR_dev.raft_type(raft=raft) for raft in raft_list]
+
+    data_table_int_dev = pG_dev.write_table(run_list=run_list, raft_list=raft_list,type_list=type_list)
 
     dash_file = args.output + 'bokehDashboard.html'
     output_file(dash_file)

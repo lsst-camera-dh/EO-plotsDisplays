@@ -13,7 +13,7 @@ from bokeh.layouts import row, layout
 from bokeh.models.glyphs import VBar
 
 """
-Create a rendering of the focal plane, composed of science and corner rafts, each made of sensors with 
+Create a rendering of the focal plane, composed of science and corner rafts, each made of sensors with
 their amplifiers.
 
 Usage modes:
@@ -21,9 +21,9 @@ Usage modes:
  2. single raft - a raft from the focal plane
  3. single CCD - CCD from the focal plane
  4. solo raft - single raft test, given a run number - could be from BNL or I&T
- 
+
  Note that there is no solo CCD mode - TS3 data is not compatible with this app.
- 
+
  Emulate mode:
   provide a list of single raft names, slots and run numbers to populate a simulated focal plane
   In this mode the run number selection for the focal plane is disabled.
@@ -364,10 +364,11 @@ class renderFocalPlane():
                               fill_alpha=0.)
 
         h_q, bins = np.histogram(np.array(test_q), bins=50)
-        bin_width = bins[1]-bins[0]
-        bin_centers = [bins[i]+bin_width/2 for i in range(len(bins)-1)]
+        #Using numpy to get the index of the bins to which the value is assigned
+        bin_indices = np.digitize(np.array(test_q),bins,right=True)
+        top = [h_q[bin_index-1] for bin_index in bin_indices]
 
-        self.source = ColumnDataSource(dict(x=x, y=y, bins=bin_centers, top=h_q, raft_name=raft_name,
+        self.source = ColumnDataSource(dict(x=x, y=y, bins=bin_indices, top=top, raft_name=raft_name,
                                   raft_slot=raft_slot,
                                   ccd_name=ccd_name, ccd_slot=ccd_slot,
                                   amp_number=amp_number, test_q=test_q))
@@ -380,21 +381,15 @@ class renderFocalPlane():
                               width=self.ccd_width/2.,
             color="black",
             fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
-
-        """"
-        h_q, bins = np.histogram(np.array(test_q), bins=50)
-        h = figure(title=testq, tools=TOOLS, toolbar_location="below")
-        h.quad(top=h_q, bottom=0, left=bins[:-1], right=bins[1:], fill_color='blue', fill_alpha=0.2)
-        """
         xdr = DataRange1d()
         ydr = DataRange1d()
+
 
         h = figure(
             title=testq, x_range=xdr, y_range=ydr, plot_width=500, plot_height=500,
             h_symmetry=False, v_symmetry=False, min_border=0, tools=TOOLS, toolbar_location="below")
 
-        glyph = VBar(x="bins", top="top", bottom=0, width=bin_width, fill_color="#b3de69")
-#        glyph = VBar(x="bins", top="top", bottom=0, width=bin_width, fill_color="#b3de69")
+        glyph = VBar(x="bins", top="top", bottom=0, width=1, fill_color="#b3de69")
         h.add_glyph(self.source, glyph)
 
         xaxis = LinearAxis()

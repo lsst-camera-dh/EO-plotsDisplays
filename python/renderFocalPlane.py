@@ -77,6 +77,9 @@ class renderFocalPlane():
                      ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
                      ('Nonlinearity', 'max_frac_dev')]
 
+        self.menu_ccd = [('S00','S00'),('S01','S01'),('S02','S02'),('S10','S10'),('S11','S11'),
+                        ('S12','S12'),('S20','S20'),('S21','S21'),('S22','S22')]
+
         # list of the slot names and their order on the focal plane
         self.raft_slot_names = ["R14", "R24", "R34",
                                 "R03", "R13", "R23", "R33", "R43",

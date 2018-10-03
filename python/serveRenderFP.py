@@ -22,6 +22,8 @@ raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
+drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=rFP.menu_ccd)
+
 def get_bias(run):
     """
     User hook for test quantity
@@ -62,6 +64,8 @@ def tap_input(attr, old, new):
 
     if rFP.single_ccd_mode is True:
         rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
+
+        interactors = layout(row(text_input, drop_test, drop_ccd, drop_modes), row(button, button_file))
 
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
@@ -124,6 +128,11 @@ def update_dropdown_modes(sattr, old, new):
         rFP.single_raft_mode = True
     elif new_mode == "FP single CCD":
         rFP.single_ccd_mode = True
+        interactors = layout(row(text_input, drop_test, drop_ccd, drop_modes), row(button, button_file))
+
+        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
     # in solo mode, ensure run selecton is re-enabled
     elif new_mode == "Solo Raft":
         rFP.solo_raft_mode = True

@@ -78,12 +78,11 @@ class renderFocalPlane():
                      ('Nonlinearity', 'max_frac_dev')]
 
         # list of the slot names and their order on the focal plane
-        self.raft_slot_names = ["R14", "R24", "R34",
-                                "R03", "R13", "R23", "R33", "R43",
-                                "R02", "R12", "R22", "R32", "R42",
-                                "R01", "R11", "R21", "R31", "R41",
-                                "R10", "R20", "R30"
-                                ]
+        self.raft_slot_names = ["R34", "R24", "R14",
+                                "R43", "R33", "R23", "R13", "R03",
+                                "R42", "R32", "R22", "R12", "R02",
+                                "R41", "R31", "R21", "R11", "R01",
+                                "R30", "R20", "R10" ]
 
         # booleans for whether a slot on the FP is occupied
         self.raft_is_there = [False] * 21
@@ -320,6 +319,12 @@ class renderFocalPlane():
             run_q = run
             if self.emulate is True and self.full_FP_mode is True:
                 run_q = self.emulated_runs[raft]
+            run_data = self.get_testq(run=run_q, testq=testq)
+
+            run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
+            amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
+            run_data = [[ccd_data[j] for j in amp_ordering] for ccd_data in run_data]
+            run_data = [val for sublist in run_data for val in sublist]
 
             test_q.extend(self.get_testq(run=run_q, testq=testq))
 
@@ -331,6 +336,8 @@ class renderFocalPlane():
                 run_info = self.connect.getRunSummary(run=single_run)
                 run_time = run_info['begin']
                 ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft], when=run_time)
+                ccd_ordering = [6,3,0,7,4,1,8,5,2]
+                ccd_list = [ccd_list[i] for i in ccd_ordering]
             else:
                 ccd_list = self.single_ccd_name
                 num_ccd = 1
@@ -353,7 +360,7 @@ class renderFocalPlane():
                     raft_slot.append(self.raft_slot_names[raft])
                     ccd_name.append(ccd_list[ccd][0])
                     ccd_slot.append(ccd_list[ccd][1])
-                    amp_number.append(amp)
+                    amp_number.append(amp_ordering[amp]+1)
 
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:

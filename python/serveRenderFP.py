@@ -1,6 +1,6 @@
 from __future__ import print_function
 from renderFocalPlane import renderFocalPlane
-from bokeh.models import TapTool, CustomJS, ColumnDataSource
+from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter
 from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
@@ -71,8 +71,30 @@ def tap_input(attr, old, new):
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
+def select_input(attr, old, new):
+    """
+    Handle the selections in the heatmap  or histogram.  Does nothing if
+    not in full Focal Plane mode
+    :param attr:
+    :param old: previous value of rFP.source
+    :param new: new value of rFP.source
+    :return: nothing
+    """
+
+    if rFP.full_FP_mode is True:
+    # The indices of the selected glyph is : new['1d']['indices']
+        min = rFP.histsource.data['left'][new['1d']['indices'][0]]
+        max = rFP.histsource.data['right'][new['1d']['indices'][-1]]
+        booleans = [True if val >= min and val<=max else False for val in rFP.source.data['test_q']]
+        view = CDSView(source=rFP.source, filters=[BooleanFilter(booleans)])
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test(),view=view)
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
+
+
 
 rFP.tap_cb = tap_input
+rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
 l = rFP.render(run=5731, testq="gain")
@@ -98,7 +120,6 @@ button_file = Button(label="Upload Emulation Config", button_type="success")
 interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
 
 m = layout(interactors, l)
-
 
 def update_dropdown_test(sattr, old, new):
     new_test = drop_test.value

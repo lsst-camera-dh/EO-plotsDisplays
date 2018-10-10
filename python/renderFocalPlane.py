@@ -1,5 +1,6 @@
 from __future__ import print_function
 import numpy as np
+import pandas as pd
 from get_EO_analysis_results import get_EO_analysis_results
 from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
@@ -53,6 +54,7 @@ class renderFocalPlane():
         self.single_ccd_name = []
 
         self.source = ColumnDataSource()
+        self.histsource = ColumnDataSource()
 
         self.current_run = 0
         self.current_test = ""
@@ -60,6 +62,7 @@ class renderFocalPlane():
 
         self.user_hook = None
         self.tap_cb = None
+        self.select_cb = None
         self.heatmap = None
         self.heatmap_rect = None
 
@@ -236,7 +239,7 @@ class renderFocalPlane():
         return slot, run
 
 
-    def render(self, run=None, testq=None):
+    def render(self, run=None, testq=None, view=None):
 
         """
         Do the work to make the desired display
@@ -271,7 +274,7 @@ class renderFocalPlane():
         self.heatmap = figure(
             title=fig_title, tools=TOOLS, toolbar_location="below",
             tooltips=[
-                ("Raft", "@raft_name"), ("Raft slot", "@raft_slot"), ("CCD slot", "@ccd_slot"),
+                ("Raft", "@raft_name"), ("Raft slot", "@raft_slot"), ("CCD slot", "@"),
                 ("CCD name", "@ccd_name"), ("Amp","@amp_number"),
                 (testq, "@test_q")
             ],
@@ -280,7 +283,9 @@ class renderFocalPlane():
         self.heatmap.hover.point_policy = "follow_mouse"
         self.heatmap.add_layout(color_bar,"right")
 
-        if self.full_FP_mode is True:
+        if self.full_FP_mode is True and view is not None:
+            self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1,view=view)
+        elif self.full_FP_mode is True:
             self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
 
         x = []
@@ -361,6 +366,7 @@ class renderFocalPlane():
                     ccd_name.append(ccd_list[ccd][0])
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(amp_ordering[amp]+1)
+        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot, ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
 
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:
@@ -370,35 +376,27 @@ class renderFocalPlane():
                               color="green",
                               fill_alpha=0.)
 
-        h_q, bins = np.histogram(np.array(test_q), bins=50)
-        #Using numpy to get the index of the bins to which the value is assigned
-        bin_indices = np.digitize(np.array(test_q),bins,right=True)
-        top = [h_q[bin_index-1] for bin_index in bin_indices]
 
-        self.source = ColumnDataSource(dict(x=x, y=y, bins=bin_indices, top=top, raft_name=raft_name,
-                                  raft_slot=raft_slot,
-                                  ccd_name=ccd_name, ccd_slot=ccd_slot,
-                                  amp_number=amp_number, test_q=test_q))
+        h_q, bins = np.histogram(np.array(test_q), bins=50)
+        self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q,left=bins[:-1], right=bins[1:])))
+        #Using numpy to get the index of the bins to which the value is assigned
+        h = figure(title=testq, tools=TOOLS, toolbar_location="below")
+        h.quad(source = self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue', fill_alpha=0.2)
         self.source.on_change('selected', self.tap_cb)
+        self.histsource.on_change('selected', self.select_cb)
 
         cm = self.heatmap.select_one(LogColorMapper)
         cm.update(low=min(test_q), high=max(test_q))
 
-        self.heatmap_rect = self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
+        if self.full_FP_mode is True and view is not None:
+            self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
+                                width=self.ccd_width/2.,
+                                color="black",
+                                fill_alpha=0.7, fill_color="black",view=view)
+        self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
                               width=self.ccd_width/2.,
-            color="black",
-            fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
-        xdr = DataRange1d()
-        ydr = DataRange1d()
-
-
-        h = figure(
-            title=testq, x_range=xdr, y_range=ydr, plot_width=500, plot_height=500,
-            h_symmetry=False, v_symmetry=False, min_border=0, tools=TOOLS, toolbar_location="below")
-
-        glyph = VBar(x="bins", top="top", bottom=0, width=1, fill_color="#b3de69")
-        h.add_glyph(self.source, glyph)
-
+                              color="black",
+                              fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
         xaxis = LinearAxis()
         yaxis = LinearAxis()
 

@@ -1,6 +1,6 @@
 from __future__ import print_function
 from renderFocalPlane import renderFocalPlane
-from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter
+from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter, GroupFilter
 from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
@@ -125,6 +125,12 @@ def update_dropdown_test(sattr, old, new):
     new_test = drop_test.value
 
     l_new = rFP.render(run=rFP.get_current_run(), testq=new_test)
+    m_new = layout(interactors, l_new)
+    m.children = m_new.children
+
+def update_dropdown_ccd(sattr, old, new):
+    new_ccd = drop_ccd.value
+    l_new = rFP.render(run=rFP.get_current_run(), testq=new_test,group=)
     m_new = layout(interactors, l_new)
     m.children = m_new.children
 

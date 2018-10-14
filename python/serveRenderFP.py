@@ -5,6 +5,7 @@ from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models.widgets import TextInput, Dropdown, Slider, Button
+import sys
 try:
     from StringIO import StringIO
 except ImportError:
@@ -24,17 +25,22 @@ rFP.set_emulation(raft_list, run_list)
 
 drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=rFP.menu_ccd)
 
-def get_bias(run):
+def parse_args(args):
+    """Need to manually assign the arguments for use with bokeh serve command.
     """
-    User hook for test quantity
-    :param run: run number
-    :return: list of user-supplied quantities to be included in the heat map
-    """
-    print ("called user hook with run ", str(run))
-    fake_list = [i*1. for i in range(1,145) ]
-    return fake_list
+    #args come in form [serveRenderFP.py,--run,run,--test,test]
+    arguments = {}
+    for i in range(1,len(args),2):
+        arguments[args[i][2:]] = args[i+1]
+    return arguments
 
-rFP.user_hook = get_bias
+print(sys.argv)
+args = parse_args(sys.argv)
+print(args)
+
+if 'hook' in args:
+     mod = __import__(args['hook'])
+     rFP.user_hook = mod.hook
 
 def tap_input(attr, old, new):
     """
@@ -97,7 +103,15 @@ rFP.tap_cb = tap_input
 rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
-l = rFP.render(run=5731, testq="gain")
+# start up with a nominal run number and test name
+if 'test' in args and 'run' not in args:
+    l = rFP.render(run=4390, testq=args['test'])
+elif 'run' in args and 'test' not in args:
+    l = rFP.render(run=int(args['run']), testq='gain')
+elif 'run' in args and 'test' in args:
+    l = rFP.render(run=int(args['run']), testq=args['test'])
+else:
+    l = rFP.render(run=4390, testq="gain")
 
 # drop down menu of test names, taking the menu from rFP.menu_test
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
@@ -130,7 +144,7 @@ def update_dropdown_test(sattr, old, new):
 
 def update_dropdown_ccd(sattr, old, new):
     new_ccd = drop_ccd.value
-    l_new = rFP.render(run=rFP.get_current_run(), testq=new_test,group=)
+    l_new = rFP.render(run=rFP.get_current_run(), testq=new_test)
     m_new = layout(interactors, l_new)
     m.children = m_new.children
 

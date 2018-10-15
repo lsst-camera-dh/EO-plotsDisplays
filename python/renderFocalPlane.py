@@ -245,7 +245,7 @@ class renderFocalPlane():
         return slot, run
 
 
-    def render(self, run=None, testq=None, view=None):
+    def render(self, run=None, testq=None, view=None,box=None):
 
         """
         Do the work to make the desired display
@@ -407,6 +407,8 @@ class renderFocalPlane():
                               width=self.ccd_width/2.,
                               color="black",
                               fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
+        if box is not None:
+            h.add_layout(box)
         xaxis = LinearAxis()
         yaxis = LinearAxis()
 

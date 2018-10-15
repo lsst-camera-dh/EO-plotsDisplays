@@ -1,6 +1,6 @@
 from __future__ import print_function
 from renderFocalPlane import renderFocalPlane
-from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter, GroupFilter
+from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter, GroupFilter,Label
 from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
@@ -86,6 +86,7 @@ def tap_input(attr, old, new):
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
+
 
         #l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         #m_new = layout(interactors, l_new)
@@ -206,20 +207,31 @@ def update_dropdown_modes(sattr, old, new):
         m.children = m_new.children
 
     elif new_mode == "FP single CCD":
-        rFP.single_ccd_mode = True
-        #if rFP.single_raft_name == []:
-        #    rFP.single_raft_name = [raft_list[1]]
-        raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
-        ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
-        print(ccd_menu)
-        drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
-        rFP.drop_ccd = drop_ccd
-        rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
-        drop_ccd.on_change('value', update_dropdown_ccd)
-        interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
-        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
-        m_new = layout(interactors, l_new)
-        m.children = m_new.children
+        try:
+            rFP.single_ccd_mode = True
+            #if rFP.single_raft_name == []:
+            #    rFP.single_raft_name = [raft_list[1]]
+            raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+            ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
+            print(ccd_menu)
+            drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
+            rFP.drop_ccd = drop_ccd
+            rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
+            drop_ccd.on_change('value', update_dropdown_ccd)
+            interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
+            l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+            m_new = layout(interactors, l_new)
+            m.children = m_new.children
+        except IndexError:
+            print('Click on a CCD in the heat map.')
+            #box = Label(x=70, y=70, x_units='screen', y_units='screen',
+            #     text='Click on CCD.', render_mode='css',
+            #     border_line_color='black', border_line_alpha=1.0,
+            #     background_fill_color='white', background_fill_alpha=1.0)
+            #nteractors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
+            #_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test(),box=box)
+            #m_new = layout(interactors, l_new)
+            #m.children = m_new.children
     # in solo mode, ensure run selecton is re-enabled
     elif new_mode == "Solo Raft":
         rFP.solo_raft_mode = True

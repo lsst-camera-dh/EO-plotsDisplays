@@ -64,7 +64,12 @@ def tap_input(attr, old, new):
 
     if rFP.single_raft_mode is True:
 
-        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        raft_menu = [(pair[1],pair[0]) for pair in raft_list]
+        drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
+        rFP.drop_raft = drop_raft
+        drop_raft.on_change('value',update_dropdown_raft)
+        interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
@@ -160,6 +165,17 @@ def update_dropdown_ccd(sattr, old, new):
     m_new = layout(interactors, l_new)
     m.children = m_new.children
 
+def update_dropdown_raft(sattr, old, new):
+    #Update from raft_list for now - need to add case where we have all rafts.
+    raft_name = rFP.drop_raft.value
+    raft_slot_mapping = {pair[0]:pair[1] for pair in raft_list}
+    raft_slot = raft_slot_mapping[raft_name]
+    rFP.single_raft_name = [[raft_name, raft_slot]]
+    interactors = layout(row(text_input, drop_test,rFP.drop_raft, drop_modes), row(button, button_file))
+    l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+    m_new = layout(interactors, l_new)
+    m.children = m_new.children
+
 drop_test.on_change('value', update_dropdown_test)
 
 def update_dropdown_modes(sattr, old, new):
@@ -173,16 +189,19 @@ def update_dropdown_modes(sattr, old, new):
     if new_mode == "Full Focal Plane":
         rFP.full_FP_mode = True
         rFP.emulate = True  # no real run data yet!
+        interactors = layout(row(text_input, drop_test,drop_modes), row(button, button_file))
         l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
     elif new_mode == "FP single raft":
         rFP.single_raft_mode = True
-        rFP.single_ccd_mode = True
-        interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
-
-        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        raft_menu = [(pair[1],pair[0]) for pair in raft_list]
+        drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
+        rFP.drop_raft = drop_raft
+        drop_raft.on_change('value',update_dropdown_raft)
+        interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 

@@ -280,7 +280,7 @@ class renderFocalPlane():
         self.heatmap = figure(
             title=fig_title, tools=TOOLS, toolbar_location="below",
             tooltips=[
-                ("Raft", "@raft_name"), ("Raft slot", "@raft_slot"), ("CCD slot", "@"),
+                ("Raft", "@raft_name"), ("Raft slot", "@raft_slot"), ("CCD slot", "@ccd_slot"),
                 ("CCD name", "@ccd_name"), ("Amp","@amp_number"),
                 (testq, "@test_q")
             ],

@@ -68,6 +68,9 @@ class renderFocalPlane():
 
         self.emulate_raft_list = []
 
+        self.drop_ccd = None
+        self.slot_mapping = None
+
         # list of available test quantities in raft/focal plane runs
         self.menu_test = [('Gain', 'gain'), ('Gain Error', 'gain_error'), ('PSF', 'psf_sigma'),
                      ("Read Noise", 'read_noise'), ('System Noise', 'system_noise'),
@@ -157,8 +160,8 @@ class renderFocalPlane():
         test_list = []
         for ccd in res:
             # if in single CCD mode, only return that one's quantities
-            #if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
-            #    continue
+            if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
+                continue
             test_list.extend(res[ccd])
 
         return test_list
@@ -291,9 +294,9 @@ class renderFocalPlane():
         elif self.full_FP_mode is True:
             self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
 
-        if self.single_ccd_mode is True:
-            view = CDSView(source=self.source, filters=[GroupFilter(column_name='species', group=self.single_ccd_name)])
-            self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1,view=view)
+        #if self.single_ccd_mode is True:
+        #    view = CDSView(source=self.source, filters=[GroupFilter(column_name='species', group=self.single_ccd_name)])
+        #    self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1,view=view)
 
         x = []
         y = []
@@ -341,16 +344,19 @@ class renderFocalPlane():
             test_q.extend(self.get_testq(run=run_q, testq=testq))
 
             num_ccd = 9
-            #if self.single_ccd_mode is False:
-            single_run = run
-            if self.emulate is True:
+            if self.single_ccd_mode is False:
+                single_run = run
+                if self.emulate is True:
                      _, single_run = self.get_emulated_raft_info(self.installed_raft_names[raft])
-            run_info = self.connect.getRunSummary(run=single_run)
-            run_time = run_info['begin']
-            ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft], when=run_time)
-            ccd_ordering = [6,3,0,7,4,1,8,5,2]
-            ccd_list = [ccd_list[i] for i in ccd_ordering]
+                run_info = self.connect.getRunSummary(run=single_run)
+                run_time = run_info['begin']
+                ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft], when=run_time)
+                ccd_ordering = [6,3,0,7,4,1,8,5,2]
+                ccd_list = [ccd_list[i] for i in ccd_ordering]
 
+            else:
+                ccd_list = self.single_ccd_name
+                num_ccd = 1
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
 

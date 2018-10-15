@@ -5,6 +5,7 @@ from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models.widgets import TextInput, Dropdown, Slider, Button
+from exploreRaft import exploreRaft
 import sys
 try:
     from StringIO import StringIO
@@ -18,12 +19,13 @@ Driver for renderFocalPlane.py - defines interactors and requests the display to
 """
 rFP = renderFocalPlane()
 
+eR = exploreRaft()
+
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 #    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
 run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
-drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=rFP.menu_ccd)
 
 def parse_args(args):
     """Need to manually assign the arguments for use with bokeh serve command.
@@ -34,9 +36,7 @@ def parse_args(args):
         arguments[args[i][2:]] = args[i+1]
     return arguments
 
-print(sys.argv)
 args = parse_args(sys.argv)
-print(args)
 
 if 'hook' in args:
      mod = __import__(args['hook'])
@@ -71,11 +71,20 @@ def tap_input(attr, old, new):
     if rFP.single_ccd_mode is True:
         rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
 
-        interactors = layout(row(text_input, drop_test, drop_ccd, drop_modes), row(button, button_file))
-
-        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+        ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
+        drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=ccd_menu)
+        rFP.drop_ccd = drop_ccd
+        rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
+        drop_ccd.on_change('value', update_dropdown_ccd)
+        interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
+
+        #l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        #m_new = layout(interactors, l_new)
+        #m.children = m_new.children
 
 def select_input(attr, old, new):
     """
@@ -143,8 +152,11 @@ def update_dropdown_test(sattr, old, new):
     m.children = m_new.children
 
 def update_dropdown_ccd(sattr, old, new):
-    new_ccd = drop_ccd.value
-    l_new = rFP.render(run=rFP.get_current_run(), testq=new_test)
+    ccd_name = rFP.drop_ccd.value
+    ccd_slot = rFP.slot_mapping[ccd_name]
+    rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
+    interactors = layout(row(text_input, drop_test,rFP.drop_ccd, drop_modes), row(button, button_file))
+    l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
     m_new = layout(interactors, l_new)
     m.children = m_new.children
 
@@ -167,11 +179,23 @@ def update_dropdown_modes(sattr, old, new):
 
     elif new_mode == "FP single raft":
         rFP.single_raft_mode = True
-    elif new_mode == "FP single CCD":
         rFP.single_ccd_mode = True
-        interactors = layout(row(text_input, drop_test, drop_ccd, drop_modes), row(button, button_file))
+        interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
 
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
+
+    elif new_mode == "FP single CCD":
+        rFP.single_ccd_mode = True
+        raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+        ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
+        drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=ccd_menu)
+        rFP.drop_ccd = drop_ccd
+        rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
+        drop_ccd.on_change('value', update_dropdown_ccd)
+        interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
     # in solo mode, ensure run selecton is re-enabled

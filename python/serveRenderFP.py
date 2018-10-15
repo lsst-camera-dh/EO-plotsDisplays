@@ -78,12 +78,12 @@ def tap_input(attr, old, new):
 
         raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
         ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
-        drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=ccd_menu)
+        drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
         rFP.drop_ccd = drop_ccd
         rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
         drop_ccd.on_change('value', update_dropdown_ccd)
         interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
-        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
@@ -207,9 +207,12 @@ def update_dropdown_modes(sattr, old, new):
 
     elif new_mode == "FP single CCD":
         rFP.single_ccd_mode = True
+        #if rFP.single_raft_name == []:
+        #    rFP.single_raft_name = [raft_list[1]]
         raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
         ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
-        drop_ccd = Dropdown(label="Select CCD", button_type="warning", menu=ccd_menu)
+        print(ccd_menu)
+        drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
         rFP.drop_ccd = drop_ccd
         rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
         drop_ccd.on_change('value', update_dropdown_ccd)

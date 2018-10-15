@@ -69,7 +69,7 @@ def tap_input(attr, old, new):
         rFP.drop_raft = drop_raft
         drop_raft.on_change('value',update_dropdown_raft)
         interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
-        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+        l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
@@ -118,15 +118,14 @@ rFP.tap_cb = tap_input
 rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
-# start up with a nominal run number and test name
 if 'test' in args and 'run' not in args:
-    l = rFP.render(run=4390, testq=args['test'])
+    l = rFP.render(run=5731, testq=args['test'])
 elif 'run' in args and 'test' not in args:
     l = rFP.render(run=int(args['run']), testq='gain')
 elif 'run' in args and 'test' in args:
     l = rFP.render(run=int(args['run']), testq=args['test'])
 else:
-    l = rFP.render(run=4390, testq="gain")
+    l = rFP.render(run=5731, testq="gain")
 
 # drop down menu of test names, taking the menu from rFP.menu_test
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
@@ -196,15 +195,18 @@ def update_dropdown_modes(sattr, old, new):
         m.children = m_new.children
 
     elif new_mode == "FP single raft":
-        rFP.single_raft_mode = True
-        raft_menu = [(pair[1],pair[0]) for pair in raft_list]
-        drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
-        rFP.drop_raft = drop_raft
-        drop_raft.on_change('value',update_dropdown_raft)
-        interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
-        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
-        m_new = layout(interactors, l_new)
-        m.children = m_new.children
+        try:
+            rFP.single_raft_mode = True
+            raft_menu = [(pair[1],pair[0]) for pair in raft_list]
+            drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
+            rFP.drop_raft = drop_raft
+            drop_raft.on_change('value',update_dropdown_raft)
+            interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
+            l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+            m_new = layout(interactors, l_new)
+            m.children = m_new.children
+        except IndexError:
+            print('Click on a raft in the heat map.')
 
     elif new_mode == "FP single CCD":
         try:

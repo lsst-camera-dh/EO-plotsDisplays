@@ -47,7 +47,7 @@ class renderFocalPlane():
         # emulate mode provides a list of single raft runs to populate a fake focal plane
         self.emulate = False
         self.emulate_run_list = []
-        self.emulated_runs = [0]*21
+        self.emulated_runs = [0]*25
 
         self.single_raft_name = []
         self.single_raft_run = None
@@ -87,29 +87,29 @@ class renderFocalPlane():
                         ('S12','S12'),('S20','S20'),('S21','S21'),('S22','S22')]
 
         # list of the slot names and their order on the focal plane
-        self.raft_slot_names = ["R34", "R24", "R14",
+        self.raft_slot_names = ["C0","R34", "R24", "R14","C1",
                                 "R43", "R33", "R23", "R13", "R03",
                                 "R42", "R32", "R22", "R12", "R02",
                                 "R41", "R31", "R21", "R11", "R01",
-                                "R30", "R20", "R10" ]
+                                "C2","R30", "R20", "R10","C4" ]
 
         # booleans for whether a slot on the FP is occupied
-        self.raft_is_there = [False] * 21
+        self.raft_is_there = [False] * 25
         # and which raft occupies the slot
-        self.installed_raft_names = [""] * 21
+        self.installed_raft_names = [""] * 25
 
         # coordinates for raft, ccd, amp locations and sizes
-        self.raft_center_x = [-3., 0., 3.,
+        self.raft_center_x = [-6.,-3., 0., 3.,6.,
                               -6., -3., 0, 3., 6.,
                               -6., -3., 0, 3., 6.,
                               -6., -3., 0, 3., 6.,
-                              -3., 0., 3.
+                              -6.,-3., 0., 3., 6.
                               ]
-        self.raft_center_y = [6., 6., 6.,
+        self.raft_center_y = [6.,6., 6., 6.,6.,
                               3., 3., 3., 3., 3.,
                               0., 0., 0., 0., 0.,
                               -3., -3., -3., -3., -3.,
-                              -6., -6., -6.
+                              -6., -6., -6.,-6.,-6.
                               ]
 
         self.ccd_center_x = [-1., 0., 1.,
@@ -189,7 +189,7 @@ class renderFocalPlane():
             if self.single_raft_mode is True or self.single_ccd_mode is True:
                 raft_list = self.single_raft_name
 
-        for j in range(21):
+        for j in range(25):
             self.installed_raft_names[j] = ""
             self.raft_is_there[j] = False
 
@@ -313,20 +313,45 @@ class renderFocalPlane():
 
         # work out all the squares for the rafts, CCDs and amps. If in single mode, suppress other rafts/
         # CCDs
-        for raft in range(21):
-
+        for raft in range(25):
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
             raft_x_list.append(raft_x)
             raft_y_list.append(raft_y)
 
-            for ccd in range(9):
-                cen_x = raft_x  + self.ccd_center_x[ccd]
-                cen_y = raft_y  - self.ccd_center_y[ccd]
-                cen_x_list.append(cen_x)
-                cen_y_list.append(cen_y)
+            # Add the corner rafts
+            if raft not in [0,4,20,24]:
+                for ccd in range(9):
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==0:
+                for ccd in [1,2,5]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==4:
+                for ccd in [3,0,1]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==20:
+                for ccd in [7,8,5]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==24:
+                for ccd in [3,6,7]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
 
-        for raft in range(21):
+        for raft in range(25):
 
             if self.raft_is_there[raft] is False:
                 continue
@@ -376,6 +401,9 @@ class renderFocalPlane():
                     ccd_name.append(ccd_list[ccd][0])
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(amp_ordering[amp]+1)
+
+
+
         self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot, ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
 
         # draw all rafts and CCDs in full mode

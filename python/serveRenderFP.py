@@ -5,8 +5,11 @@ from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models.widgets import TextInput, Dropdown, Slider, Button
+from bokeh.io import export_png
 from exploreRaft import exploreRaft
 import sys
+import argparse
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -17,6 +20,15 @@ import pandas
 """
 Driver for renderFocalPlane.py - defines interactors and requests the display to be produced
 """
+
+parser = argparse.ArgumentParser(
+    description='Create heatmap of Camera EO test data quantities.')
+
+
+parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
+
+p_args = parser.parse_args()
+
 rFP = renderFocalPlane()
 
 eR = exploreRaft()
@@ -148,6 +160,9 @@ button_file = Button(label="Upload Emulation Config", button_type="success")
 interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
 
 m = layout(interactors, l)
+
+if 'png' in args:
+    export_png(l,'app.png')
 
 def update_dropdown_test(sattr, old, new):
     new_test = drop_test.value

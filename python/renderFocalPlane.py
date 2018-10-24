@@ -1,5 +1,6 @@
 from __future__ import print_function
 import numpy as np
+import pandas as pd
 from get_EO_analysis_results import get_EO_analysis_results
 from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
@@ -46,13 +47,14 @@ class renderFocalPlane():
         # emulate mode provides a list of single raft runs to populate a fake focal plane
         self.emulate = False
         self.emulate_run_list = []
-        self.emulated_runs = [0]*21
+        self.emulated_runs = [0]*25
 
         self.single_raft_name = []
         self.single_raft_run = None
         self.single_ccd_name = []
 
         self.source = ColumnDataSource()
+        self.histsource = ColumnDataSource()
 
         self.current_run = 0
         self.current_test = ""
@@ -60,10 +62,14 @@ class renderFocalPlane():
 
         self.user_hook = None
         self.tap_cb = None
+        self.select_cb = None
         self.heatmap = None
         self.heatmap_rect = None
 
         self.emulate_raft_list = []
+
+        self.drop_ccd = None
+        self.slot_mapping = None
 
         # list of available test quantities in raft/focal plane runs
         self.menu_test = [('Gain', 'gain'), ('Gain Error', 'gain_error'), ('PSF', 'psf_sigma'),
@@ -77,30 +83,33 @@ class renderFocalPlane():
                      ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
                      ('Nonlinearity', 'max_frac_dev')]
 
+        self.menu_ccd = [('S00','S00'),('S01','S01'),('S02','S02'),('S10','S10'),('S11','S11'),
+                        ('S12','S12'),('S20','S20'),('S21','S21'),('S22','S22')]
+
         # list of the slot names and their order on the focal plane
-        self.raft_slot_names = ["R34", "R24", "R14",
+        self.raft_slot_names = ["C0","R34", "R24", "R14","C1",
                                 "R43", "R33", "R23", "R13", "R03",
                                 "R42", "R32", "R22", "R12", "R02",
                                 "R41", "R31", "R21", "R11", "R01",
-                                "R30", "R20", "R10" ]
+                                "C2","R30", "R20", "R10","C4" ]
 
         # booleans for whether a slot on the FP is occupied
-        self.raft_is_there = [False] * 21
+        self.raft_is_there = [False] * 25
         # and which raft occupies the slot
-        self.installed_raft_names = [""] * 21
+        self.installed_raft_names = [""] * 25
 
         # coordinates for raft, ccd, amp locations and sizes
-        self.raft_center_x = [-3., 0., 3.,
+        self.raft_center_x = [-6.,-3., 0., 3.,6.,
                               -6., -3., 0, 3., 6.,
                               -6., -3., 0, 3., 6.,
                               -6., -3., 0, 3., 6.,
-                              -3., 0., 3.
+                              -6.,-3., 0., 3., 6.
                               ]
-        self.raft_center_y = [6., 6., 6.,
+        self.raft_center_y = [6.,6., 6., 6.,6.,
                               3., 3., 3., 3., 3.,
                               0., 0., 0., 0., 0.,
                               -3., -3., -3., -3., -3.,
-                              -6., -6., -6.
+                              -6., -6., -6.,-6.,-6.
                               ]
 
         self.ccd_center_x = [-1., 0., 1.,
@@ -180,7 +189,7 @@ class renderFocalPlane():
             if self.single_raft_mode is True or self.single_ccd_mode is True:
                 raft_list = self.single_raft_name
 
-        for j in range(21):
+        for j in range(25):
             self.installed_raft_names[j] = ""
             self.raft_is_there[j] = False
 
@@ -236,7 +245,7 @@ class renderFocalPlane():
         return slot, run
 
 
-    def render(self, run=None, testq=None):
+    def render(self, run=None, testq=None, view=None,box=None):
 
         """
         Do the work to make the desired display
@@ -280,8 +289,14 @@ class renderFocalPlane():
         self.heatmap.hover.point_policy = "follow_mouse"
         self.heatmap.add_layout(color_bar,"right")
 
-        if self.full_FP_mode is True:
+        if self.full_FP_mode is True and view is not None:
+            self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1,view=view)
+        elif self.full_FP_mode is True:
             self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
+
+        #if self.single_ccd_mode is True:
+        #    view = CDSView(source=self.source, filters=[GroupFilter(column_name='species', group=self.single_ccd_name)])
+        #    self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1,view=view)
 
         x = []
         y = []
@@ -298,20 +313,45 @@ class renderFocalPlane():
 
         # work out all the squares for the rafts, CCDs and amps. If in single mode, suppress other rafts/
         # CCDs
-        for raft in range(21):
-
+        for raft in range(25):
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
             raft_x_list.append(raft_x)
             raft_y_list.append(raft_y)
 
-            for ccd in range(9):
-                cen_x = raft_x  + self.ccd_center_x[ccd]
-                cen_y = raft_y  - self.ccd_center_y[ccd]
-                cen_x_list.append(cen_x)
-                cen_y_list.append(cen_y)
+            # Add the corner rafts
+            if raft not in [0,4,20,24]:
+                for ccd in range(9):
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==0:
+                for ccd in [1,2,5]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==4:
+                for ccd in [3,0,1]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==20:
+                for ccd in [7,8,5]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
+            elif raft==24:
+                for ccd in [3,6,7]:
+                    cen_x = raft_x  + self.ccd_center_x[ccd]
+                    cen_y = raft_y  - self.ccd_center_y[ccd]
+                    cen_x_list.append(cen_x)
+                    cen_y_list.append(cen_y)
 
-        for raft in range(21):
+        for raft in range(25):
 
             if self.raft_is_there[raft] is False:
                 continue
@@ -338,10 +378,10 @@ class renderFocalPlane():
                 ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft], when=run_time)
                 ccd_ordering = [6,3,0,7,4,1,8,5,2]
                 ccd_list = [ccd_list[i] for i in ccd_ordering]
+
             else:
                 ccd_list = self.single_ccd_name
                 num_ccd = 1
-
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
 
@@ -362,6 +402,10 @@ class renderFocalPlane():
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(amp_ordering[amp]+1)
 
+
+
+        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot, ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
+
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:
             self.heatmap.rect(x=raft_x_list, y=raft_y_list, width=self.raft_width,
@@ -370,35 +414,29 @@ class renderFocalPlane():
                               color="green",
                               fill_alpha=0.)
 
-        h_q, bins = np.histogram(np.array(test_q), bins=50)
-        #Using numpy to get the index of the bins to which the value is assigned
-        bin_indices = np.digitize(np.array(test_q),bins,right=True)
-        top = [h_q[bin_index-1] for bin_index in bin_indices]
 
-        self.source = ColumnDataSource(dict(x=x, y=y, bins=bin_indices, top=top, raft_name=raft_name,
-                                  raft_slot=raft_slot,
-                                  ccd_name=ccd_name, ccd_slot=ccd_slot,
-                                  amp_number=amp_number, test_q=test_q))
+        h_q, bins = np.histogram(np.array(test_q), bins=50)
+        self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q,left=bins[:-1], right=bins[1:])))
+        #Using numpy to get the index of the bins to which the value is assigned
+        h = figure(title=testq, tools=TOOLS, toolbar_location="below")
+        h.quad(source = self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue', fill_alpha=0.2)
         self.source.on_change('selected', self.tap_cb)
+        self.histsource.on_change('selected', self.select_cb)
 
         cm = self.heatmap.select_one(LogColorMapper)
         cm.update(low=min(test_q), high=max(test_q))
 
-        self.heatmap_rect = self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
+        if self.full_FP_mode is True and view is not None:
+            self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
+                                width=self.ccd_width/2.,
+                                color="black",
+                                fill_alpha=0.7, fill_color="black",view=view)
+        self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
                               width=self.ccd_width/2.,
-            color="black",
-            fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
-        xdr = DataRange1d()
-        ydr = DataRange1d()
-
-
-        h = figure(
-            title=testq, x_range=xdr, y_range=ydr, plot_width=500, plot_height=500,
-            h_symmetry=False, v_symmetry=False, min_border=0, tools=TOOLS, toolbar_location="below")
-
-        glyph = VBar(x="bins", top="top", bottom=0, width=1, fill_color="#b3de69")
-        h.add_glyph(self.source, glyph)
-
+                              color="black",
+                              fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
+        if box is not None:
+            h.add_layout(box)
         xaxis = LinearAxis()
         yaxis = LinearAxis()
 

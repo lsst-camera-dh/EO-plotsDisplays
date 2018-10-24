@@ -1,10 +1,15 @@
 from __future__ import print_function
 from renderFocalPlane import renderFocalPlane
-from bokeh.models import TapTool, CustomJS, ColumnDataSource
+from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter, GroupFilter,Label
 from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models.widgets import TextInput, Dropdown, Slider, Button
+from bokeh.io import export_png
+from exploreRaft import exploreRaft
+import sys
+import argparse
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -15,24 +20,39 @@ import pandas
 """
 Driver for renderFocalPlane.py - defines interactors and requests the display to be produced
 """
+
+parser = argparse.ArgumentParser(
+    description='Create heatmap of Camera EO test data quantities.')
+
+
+parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
+
+p_args = parser.parse_args()
+
 rFP = renderFocalPlane()
+
+eR = exploreRaft()
 
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 #    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
 run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
-def get_bias(run):
-    """
-    User hook for test quantity
-    :param run: run number
-    :return: list of user-supplied quantities to be included in the heat map
-    """
-    print ("called user hook with run ", str(run))
-    fake_list = [i*1. for i in range(1,145) ]
-    return fake_list
 
-rFP.user_hook = get_bias
+def parse_args(args):
+    """Need to manually assign the arguments for use with bokeh serve command.
+    """
+    #args come in form [serveRenderFP.py,--run,run,--test,test]
+    arguments = {}
+    for i in range(1,len(args),2):
+        arguments[args[i][2:]] = args[i+1]
+    return arguments
+
+args = parse_args(sys.argv)
+
+if 'hook' in args:
+     mod = __import__(args['hook'])
+     rFP.user_hook = mod.hook
 
 def tap_input(attr, old, new):
     """
@@ -56,6 +76,11 @@ def tap_input(attr, old, new):
 
     if rFP.single_raft_mode is True:
 
+        raft_menu = [(pair[1],pair[0]) for pair in raft_list]
+        drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
+        rFP.drop_raft = drop_raft
+        drop_raft.on_change('value',update_dropdown_raft)
+        interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
@@ -63,15 +88,56 @@ def tap_input(attr, old, new):
     if rFP.single_ccd_mode is True:
         rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
 
+        raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+        ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
+        drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
+        rFP.drop_ccd = drop_ccd
+        rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
+        drop_ccd.on_change('value', update_dropdown_ccd)
+        interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
         l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
 
+        #l_new = rFP.render(run=rFP.single_raft_run, testq=rFP.get_current_test())
+        #m_new = layout(interactors, l_new)
+        #m.children = m_new.children
+
+def select_input(attr, old, new):
+    """
+    Handle the selections in the heatmap  or histogram.  Does nothing if
+    not in full Focal Plane mode
+    :param attr:
+    :param old: previous value of rFP.source
+    :param new: new value of rFP.source
+    :return: nothing
+    """
+
+    if rFP.full_FP_mode is True:
+    # The indices of the selected glyph is : new['1d']['indices']
+        min = rFP.histsource.data['left'][new['1d']['indices'][0]]
+        max = rFP.histsource.data['right'][new['1d']['indices'][-1]]
+        booleans = [True if val >= min and val<=max else False for val in rFP.source.data['test_q']]
+        view = CDSView(source=rFP.source, filters=[BooleanFilter(booleans)])
+        l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test(),view=view)
+        m_new = layout(interactors, l_new)
+        m.children = m_new.children
+
+
+
 rFP.tap_cb = tap_input
+rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
-l = rFP.render(run=5731, testq="gain")
+if 'test' in args and 'run' not in args:
+    l = rFP.render(run=5731, testq=args['test'])
+elif 'run' in args and 'test' not in args:
+    l = rFP.render(run=int(args['run']), testq='gain')
+elif 'run' in args and 'test' in args:
+    l = rFP.render(run=int(args['run']), testq=args['test'])
+else:
+    l = rFP.render(run=5731, testq="gain")
 
 # drop down menu of test names, taking the menu from rFP.menu_test
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
@@ -95,11 +161,33 @@ interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_
 
 m = layout(interactors, l)
 
+if 'png' in args:
+    export_png(l,'app.png')
 
 def update_dropdown_test(sattr, old, new):
     new_test = drop_test.value
 
     l_new = rFP.render(run=rFP.get_current_run(), testq=new_test)
+    m_new = layout(interactors, l_new)
+    m.children = m_new.children
+
+def update_dropdown_ccd(sattr, old, new):
+    ccd_name = rFP.drop_ccd.value
+    ccd_slot = rFP.slot_mapping[ccd_name]
+    rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
+    interactors = layout(row(text_input, drop_test,rFP.drop_ccd, drop_modes), row(button, button_file))
+    l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+    m_new = layout(interactors, l_new)
+    m.children = m_new.children
+
+def update_dropdown_raft(sattr, old, new):
+    #Update from raft_list for now - need to add case where we have all rafts.
+    raft_name = rFP.drop_raft.value
+    raft_slot_mapping = {pair[0]:pair[1] for pair in raft_list}
+    raft_slot = raft_slot_mapping[raft_name]
+    rFP.single_raft_name = [[raft_name, raft_slot]]
+    interactors = layout(row(text_input, drop_test,rFP.drop_raft, drop_modes), row(button, button_file))
+    l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
     m_new = layout(interactors, l_new)
     m.children = m_new.children
 
@@ -116,14 +204,51 @@ def update_dropdown_modes(sattr, old, new):
     if new_mode == "Full Focal Plane":
         rFP.full_FP_mode = True
         rFP.emulate = True  # no real run data yet!
+        interactors = layout(row(text_input, drop_test,drop_modes), row(button, button_file))
         l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
 
     elif new_mode == "FP single raft":
-        rFP.single_raft_mode = True
+        try:
+            rFP.single_raft_mode = True
+            raft_menu = [(pair[1],pair[0]) for pair in raft_list]
+            drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
+            rFP.drop_raft = drop_raft
+            drop_raft.on_change('value',update_dropdown_raft)
+            interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
+            l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+            m_new = layout(interactors, l_new)
+            m.children = m_new.children
+        except IndexError:
+            print('Click on a raft in the heat map.')
+
     elif new_mode == "FP single CCD":
-        rFP.single_ccd_mode = True
+        try:
+            rFP.single_ccd_mode = True
+            #if rFP.single_raft_name == []:
+            #    rFP.single_raft_name = [raft_list[1]]
+            raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+            ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
+            print(ccd_menu)
+            drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
+            rFP.drop_ccd = drop_ccd
+            rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
+            drop_ccd.on_change('value', update_dropdown_ccd)
+            interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
+            l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
+            m_new = layout(interactors, l_new)
+            m.children = m_new.children
+        except IndexError:
+            print('Click on a CCD in the heat map.')
+            #box = Label(x=70, y=70, x_units='screen', y_units='screen',
+            #     text='Click on CCD.', render_mode='css',
+            #     border_line_color='black', border_line_alpha=1.0,
+            #     background_fill_color='white', background_fill_alpha=1.0)
+            #nteractors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
+            #_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test(),box=box)
+            #m_new = layout(interactors, l_new)
+            #m.children = m_new.children
     # in solo mode, ensure run selecton is re-enabled
     elif new_mode == "Solo Raft":
         rFP.solo_raft_mode = True

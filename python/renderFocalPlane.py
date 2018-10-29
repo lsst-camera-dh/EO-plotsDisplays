@@ -375,6 +375,11 @@ class renderFocalPlane():
 
         timing_ccd_hierarchy = 0
 
+        t_0_run_info = 0
+        t_r_done = 0
+        t_0_hierarchy = 0
+        t_hierarchy = 0
+
         for raft in range(25):
 
             if self.raft_is_there[raft] is False:
@@ -399,10 +404,6 @@ class renderFocalPlane():
 #                if self.emulate is True:
 #                    _, single_run = self.get_emulated_raft_info(self.installed_raft_names[raft])
 
-                t_0_run_info = time.time()
-                t_r_done = 0
-                t_0_hierarchy = time.time()
-                t_hierarchy = 0
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
                     t_0_run_info = time.time()
@@ -448,7 +449,8 @@ class renderFocalPlane():
 
         ready_data_time = time.time() - enter_time
 
-        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot, ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
+        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
+                            ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
 
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:
@@ -464,7 +466,8 @@ class renderFocalPlane():
         self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q,left=bins[:-1], right=bins[1:])))
         #Using numpy to get the index of the bins to which the value is assigned
         h = figure(title=testq, tools=TOOLS, toolbar_location="below")
-        h.quad(source = self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue', fill_alpha=0.2)
+        h.quad(source = self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue',
+               fill_alpha=0.2)
         self.source.on_change('selected', self.tap_cb)
         self.histsource.on_change('selected', self.select_cb)
 

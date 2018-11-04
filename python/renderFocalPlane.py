@@ -435,13 +435,9 @@ class renderFocalPlane():
 
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
-                    t_0_run_info = time.time()
-                    run_info = self.connect.getRunSummary(run=self.current_run)
-                    t_r_done = time.time() - t_0_run_info
-                    run_time = run_info['begin']
                     t_0_hierarchy = time.time()
                     ccd_list_run = self.eR.raftContents(raftName=self.installed_raft_names[raft],
-                                                       when=run_time)
+                                                       run=self.current_run)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy
                     r = self.ccd_content_cache.setdefault(self.current_run,{})

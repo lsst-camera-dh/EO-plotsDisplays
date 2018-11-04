@@ -59,6 +59,7 @@ class renderFocalPlane():
 
         self.current_run = 0
         self.current_test = ""
+        self.previous_test = ""
         self.current_raft = None
         self.EO_type = "I&T-Raft"
 
@@ -172,7 +173,10 @@ class renderFocalPlane():
 
         # fetch the test from the cache
 
-        t = self.test_cache[run][self.current_raft][testq]
+        try:
+            t = self.test_cache[run][self.current_raft][testq]
+        except KeyError:
+            raise KeyError(testq + ": not available. Reverting to previous - " + self.previous_test)
         for ccd in t:
             # if in single CCD mode, only return that one's quantities
             if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
@@ -388,7 +392,11 @@ class renderFocalPlane():
             self.current_raft = self.installed_raft_names[raft]
             if self.emulate is True and self.full_FP_mode is True:
                 self.current_run = self.emulated_runs[raft]
-            run_data = self.get_testq(run=self.current_run, testq=testq)
+
+            try:
+                run_data = self.get_testq(run=self.current_run, testq=testq)
+            except KeyError:
+                run_data = self.get_testq(run=self.current_run, testq=self.previous_test)
 
             run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
             amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
@@ -498,5 +506,7 @@ class renderFocalPlane():
         print ("Timing: e ", enter_time, " s ", setup_time, " r ", ready_data_time, " h ",
                heat_map_done_time, " d ", done_time, " t ", self.testq_timer, " h_ccd ",
                timing_ccd_hierarchy," tr", t_r_done)
+
+        self.previous_test = self.current_test
 
         return l

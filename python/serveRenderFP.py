@@ -29,6 +29,8 @@ parser.add_argument('-t', '--test', default="gain", help="test quantity to displ
 parser.add_argument('-r', '--run', default=None, help="run number")
 parser.add_argument('--hook', default=None, help="name of user hook module to load")
 parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
+parser.add_argument('-e', '--emulate', default=None, help="file spec for emulation config")
+parser.add_argument('-m', '--mode', default="full_FP", help="heatmap viewing mode")
 
 p_args = parser.parse_args()
 
@@ -41,6 +43,9 @@ raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
+# don't set single mode yet!
+
+rFP.set_mode(p_args.mode)
 
 if p_args.hook is not None:
      mod = __import__(p_args.hook)

@@ -199,6 +199,7 @@ class renderFocalPlane():
                 run = self.current_run
                 run_info = self.connect.getRunResults(run=run)
                 raft_list = [[run_info['experimentSN'], "R22"]]
+                self.single_raft_name = raft_list
             # raft or CCD is on the focal plane
             elif self.single_raft_mode is True or self.single_ccd_mode is True:
                 raft_list = self.single_raft_name
@@ -263,6 +264,26 @@ class renderFocalPlane():
                 slot = r[1]
                 run = self.emulate_run_list[idx]
         return slot, run
+
+
+    def set_mode(self, mode):
+
+        self.full_FP_mode = False
+        self.single_ccd_mode = False
+        self.single_raft_mode = False
+        self.solo_raft_mode = False
+
+        if mode == "full_FP":
+            self.full_FP_mode = True
+        if mode == "full_FP":
+            self.full_FP_mode = True
+        elif mode == "single_ccd":
+            self.single_ccd_mode = True
+        elif mode == "single_raft":
+            self.single_raft_mode = True
+        elif mode == "solo_raft":
+            self.solo_raft_mode = True
+            self.emulate = False
 
 
     def render(self, run=None, testq=None, view=None,box=None):

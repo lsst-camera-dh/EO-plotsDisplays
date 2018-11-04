@@ -26,6 +26,9 @@ parser = argparse.ArgumentParser(
 
 
 parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
+parser.add_argument('-r', '--run', default=None, help="run number")
+parser.add_argument('--hook', default=None, help="name of user hook module to load")
+parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
 
 p_args = parser.parse_args()
 
@@ -39,19 +42,8 @@ run_list = [5731, 6259]
 rFP.set_emulation(raft_list, run_list)
 
 
-def parse_args(args):
-    """Need to manually assign the arguments for use with bokeh serve command.
-    """
-    #args come in form [serveRenderFP.py,--run,run,--test,test]
-    arguments = {}
-    for i in range(1,len(args),2):
-        arguments[args[i][2:]] = args[i+1]
-    return arguments
-
-args = parse_args(sys.argv)
-
-if 'hook' in args:
-     mod = __import__(args['hook'])
+if p_args.hook is not None:
+     mod = __import__(p_args.hook)
      rFP.user_hook = mod.hook
 
 def tap_input(attr, old, new):
@@ -130,14 +122,17 @@ rFP.tap_cb = tap_input
 rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
-if 'test' in args and 'run' not in args:
-    l = rFP.render(run=5731, testq=args['test'])
-elif 'run' in args and 'test' not in args:
-    l = rFP.render(run=int(args['run']), testq='gain')
-elif 'run' in args and 'test' in args:
-    l = rFP.render(run=int(args['run']), testq=args['test'])
-else:
-    l = rFP.render(run=5731, testq="gain")
+
+ini_run =5731
+ini_test = "gain"
+
+if p_args.run is not None:
+    ini_run = p_args.run
+if p_args.test is not None:
+    ini_test = p_args.test
+
+
+l = rFP.render(run=ini_run, testq=ini_test)
 
 # drop down menu of test names, taking the menu from rFP.menu_test
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
@@ -161,8 +156,8 @@ interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_
 
 m = layout(interactors, l)
 
-if 'png' in args:
-    export_png(l,'app.png')
+if p_args.png is not None:
+    export_png(l,p_args.png)
 
 def update_dropdown_test(sattr, old, new):
     new_test = drop_test.value

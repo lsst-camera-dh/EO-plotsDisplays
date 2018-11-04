@@ -146,7 +146,8 @@ drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_t
 menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
               ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft")]
 
-drop_modes = Dropdown(label="Mode: Full Focal Plane", button_type="success", menu=menu_modes)
+drop_modes = Dropdown(label="Mode: " + menu_modes[rFP.current_mode][0], button_type="success",
+                      menu=menu_modes)
 
 # set up run number text box - disable it in emulate mode
 text_input = TextInput(value=str(rFP.get_current_run()), title="Select Run")

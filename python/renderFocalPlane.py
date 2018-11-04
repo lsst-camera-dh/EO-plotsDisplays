@@ -62,6 +62,7 @@ class renderFocalPlane():
         self.previous_test = ""
         self.current_raft = None
         self.EO_type = "I&T-Raft"
+        self.current_mode = 0
 
         self.user_hook = None
         self.tap_cb = None
@@ -275,15 +276,17 @@ class renderFocalPlane():
 
         if mode == "full_FP":
             self.full_FP_mode = True
-        if mode == "full_FP":
-            self.full_FP_mode = True
+            self.current_mode=0
         elif mode == "single_ccd":
             self.single_ccd_mode = True
+            self.current_mode=2
         elif mode == "single_raft":
             self.single_raft_mode = True
+            self.current_mode=1
         elif mode == "solo_raft":
             self.solo_raft_mode = True
             self.emulate = False
+            self.current_mode=3
 
 
     def render(self, run=None, testq=None, view=None,box=None):
@@ -400,8 +403,6 @@ class renderFocalPlane():
 
         timing_ccd_hierarchy = 0
 
-        t_0_run_info = 0
-        t_r_done = 0
         t_0_hierarchy = 0
         t_hierarchy = 0
 
@@ -522,7 +523,7 @@ class renderFocalPlane():
 
         print ("Timing: e ", enter_time, " s ", setup_time, " r ", ready_data_time, " h ",
                heat_map_done_time, " d ", done_time, " t ", self.testq_timer, " h_ccd ",
-               timing_ccd_hierarchy," tr", t_r_done)
+               timing_ccd_hierarchy)
 
         self.previous_test = self.current_test
 

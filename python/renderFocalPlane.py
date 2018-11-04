@@ -142,8 +142,8 @@ class renderFocalPlane():
             pS = False
         self.connect = Connection(operator='richard', db=db, exp='LSST-CAMERA', prodServer=pS)
 
-        self.eFP = exploreFocalPlane()
-        self.eR = exploreRaft()
+        self.eFP = exploreFocalPlane(db=db, prodServer=server)
+        self.eR = exploreRaft(db=db, prodServer=server)
         self.get_EO = get_EO_analysis_results(db=db, server=server)
 
     def get_testq(self, run=None, testq=None):

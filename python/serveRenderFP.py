@@ -31,12 +31,13 @@ parser.add_argument('--hook', default=None, help="name of user hook module to lo
 parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
 parser.add_argument('-e', '--emulate', default=None, help="file spec for emulation config")
 parser.add_argument('-m', '--mode', default="full_FP", help="heatmap viewing mode")
+parser.add_argument('-d', '--db', default="Prod", help="eT database")
 
 p_args = parser.parse_args()
 
-rFP = renderFocalPlane()
+rFP = renderFocalPlane(db=p_args.db)
 
-eR = exploreRaft()
+eR = rFP.eR
 
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 #    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]

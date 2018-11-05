@@ -39,9 +39,13 @@ rFP = renderFocalPlane(db=p_args.db)
 
 eR = rFP.eR
 
+# set a default emulation config
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
-#    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
 run_list = [5731, 6259]
+
+if p_args.emulate is not None:
+    raft_list, run_list = rFP.parse_emulation_config(p_args.emulate)
+
 rFP.set_emulation(raft_list, run_list)
 
 # don't set single mode yet!
@@ -298,20 +302,9 @@ button.on_click(update_button)
 file_source = ColumnDataSource({'file_contents':[], 'file_name':[]})
 
 def file_callback(attr,old,new):
-    filename = file_source.data['file_name']
-    df = pandas.read_csv(filename[0], header=0, skipinitialspace=True)
-    raft_frame = df.set_index('raft', drop=False)
+    filename = file_source.data['file_name'][0]
 
-    raft_col = raft_frame["raft"]
-    raft_list = []
-    run_list = []
-
-    for raft in raft_col:
-
-        slot = raft_frame.loc[raft, "slot"]
-        run = raft_frame.loc[raft, "run"]
-        raft_list.append([raft, slot])
-        run_list.append(run)
+    raft_list, run_list = rFP.parse_emulation_config(filename)
 
     rFP.set_emulation(raft_list, run_list)
 

@@ -288,6 +288,22 @@ class renderFocalPlane():
             self.emulate = False
             self.current_mode=3
 
+    def parse_emulation_config(self, file_spec):
+
+        df = pd.read_csv(file_spec, header=0, skipinitialspace=True)
+        raft_frame = df.set_index('raft', drop=False)
+
+        raft_col = raft_frame["raft"]
+        raft_list = []
+        run_list = []
+
+        for raft in raft_col:
+            slot = raft_frame.loc[raft, "slot"]
+            run = raft_frame.loc[raft, "run"]
+            raft_list.append([raft, slot])
+            run_list.append(run)
+
+        return raft_list, run_list
 
     def render(self, run=None, testq=None, view=None,box=None):
 

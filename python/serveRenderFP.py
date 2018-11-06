@@ -39,7 +39,7 @@ rFP = renderFocalPlane(db=p_args.db)
 
 # set a default emulation config
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
-run_list = [5731, 6259]
+run_list = ["5731", "6259"]
 
 if p_args.emulate is not None:
     raft_list, run_list = rFP.parse_emulation_config(p_args.emulate)
@@ -131,7 +131,7 @@ rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
 
-ini_run =5731
+ini_run ="5731"
 ini_test = "gain"
 
 if p_args.run is not None:

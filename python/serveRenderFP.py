@@ -26,32 +26,34 @@ parser = argparse.ArgumentParser(
 
 
 parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
+parser.add_argument('-r', '--run', default=None, help="run number")
+parser.add_argument('--hook', default=None, help="name of user hook module to load")
+parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
+parser.add_argument('-e', '--emulate', default=None, help="file spec for emulation config")
+parser.add_argument('-m', '--mode', default="full_FP", help="heatmap viewing mode")
+parser.add_argument('-d', '--db', default="Prod", help="eT database")
 
 p_args = parser.parse_args()
 
-rFP = renderFocalPlane()
+rFP = renderFocalPlane(db=p_args.db)
 
-eR = exploreRaft()
+eR = rFP.eR
 
+# set a default emulation config
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
-#    raft_list = [["LCA-11021_RTM-003_ETU2", "R10"]]
 run_list = [5731, 6259]
+
+if p_args.emulate is not None:
+    raft_list, run_list = rFP.parse_emulation_config(p_args.emulate)
+
 rFP.set_emulation(raft_list, run_list)
 
+# don't set single mode yet!
 
-def parse_args(args):
-    """Need to manually assign the arguments for use with bokeh serve command.
-    """
-    #args come in form [serveRenderFP.py,--run,run,--test,test]
-    arguments = {}
-    for i in range(1,len(args),2):
-        arguments[args[i][2:]] = args[i+1]
-    return arguments
+rFP.set_mode(p_args.mode)
 
-args = parse_args(sys.argv)
-
-if 'hook' in args:
-     mod = __import__(args['hook'])
+if p_args.hook is not None:
+     mod = __import__(p_args.hook)
      rFP.user_hook = mod.hook
 
 def tap_input(attr, old, new):
@@ -130,14 +132,17 @@ rFP.tap_cb = tap_input
 rFP.select_cb = select_input
 
 # start up with a nominal run number and test name
-if 'test' in args and 'run' not in args:
-    l = rFP.render(run=5731, testq=args['test'])
-elif 'run' in args and 'test' not in args:
-    l = rFP.render(run=int(args['run']), testq='gain')
-elif 'run' in args and 'test' in args:
-    l = rFP.render(run=int(args['run']), testq=args['test'])
-else:
-    l = rFP.render(run=5731, testq="gain")
+
+ini_run =5731
+ini_test = "gain"
+
+if p_args.run is not None:
+    ini_run = p_args.run
+if p_args.test is not None:
+    ini_test = p_args.test
+
+
+l = rFP.render(run=ini_run, testq=ini_test)
 
 # drop down menu of test names, taking the menu from rFP.menu_test
 drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_test)
@@ -146,7 +151,8 @@ drop_test = Dropdown(label="Select test", button_type="warning", menu=rFP.menu_t
 menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
               ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft")]
 
-drop_modes = Dropdown(label="Mode: Full Focal Plane", button_type="success", menu=menu_modes)
+drop_modes = Dropdown(label="Mode: " + menu_modes[rFP.current_mode][0], button_type="success",
+                      menu=menu_modes)
 
 # set up run number text box - disable it in emulate mode
 text_input = TextInput(value=str(rFP.get_current_run()), title="Select Run")
@@ -161,8 +167,8 @@ interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_
 
 m = layout(interactors, l)
 
-if 'png' in args:
-    export_png(l,'app.png')
+if p_args.png is not None:
+    export_png(l,p_args.png)
 
 def update_dropdown_test(sattr, old, new):
     new_test = drop_test.value
@@ -296,20 +302,9 @@ button.on_click(update_button)
 file_source = ColumnDataSource({'file_contents':[], 'file_name':[]})
 
 def file_callback(attr,old,new):
-    filename = file_source.data['file_name']
-    df = pandas.read_csv(filename[0], header=0, skipinitialspace=True)
-    raft_frame = df.set_index('raft', drop=False)
+    filename = file_source.data['file_name'][0]
 
-    raft_col = raft_frame["raft"]
-    raft_list = []
-    run_list = []
-
-    for raft in raft_col:
-
-        slot = raft_frame.loc[raft, "slot"]
-        run = raft_frame.loc[raft, "run"]
-        raft_list.append([raft, slot])
-        run_list.append(run)
+    raft_list, run_list = rFP.parse_emulation_config(filename)
 
     rFP.set_emulation(raft_list, run_list)
 

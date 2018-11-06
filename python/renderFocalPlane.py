@@ -12,6 +12,7 @@ from bokeh.plotting import figure
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models.glyphs import VBar
+import time
 
 """
 Create a rendering of the focal plane, composed of science and corner rafts, each made of sensors with
@@ -58,7 +59,10 @@ class renderFocalPlane():
 
         self.current_run = 0
         self.current_test = ""
+        self.previous_test = ""
+        self.current_raft = None
         self.EO_type = "I&T-Raft"
+        self.current_mode = 0
 
         self.user_hook = None
         self.tap_cb = None
@@ -70,6 +74,11 @@ class renderFocalPlane():
 
         self.drop_ccd = None
         self.slot_mapping = None
+
+        self.testq_timer = 0
+
+        self.test_cache = {}
+        self.ccd_content_cache = {}
 
         # list of available test quantities in raft/focal plane runs
         self.menu_test = [('Gain', 'gain'), ('Gain Error', 'gain_error'), ('PSF', 'psf_sigma'),
@@ -133,8 +142,8 @@ class renderFocalPlane():
             pS = False
         self.connect = Connection(operator='richard', db=db, exp='LSST-CAMERA', prodServer=pS)
 
-        self.eFP = exploreFocalPlane()
-        self.eR = exploreRaft()
+        self.eFP = exploreFocalPlane(db=db, prodServer=server)
+        self.eR = exploreRaft(db=db, prodServer=server)
         self.get_EO = get_EO_analysis_results(db=db, server=server)
 
     def get_testq(self, run=None, testq=None):
@@ -145,6 +154,7 @@ class renderFocalPlane():
         :return: list of test quantities - 144 long for raft; 16 for ccd
         """
 
+        in_time = time.time()
         # in emulation mode, take the run number from the single raft run, rather than Focal Plane
         if self.emulate is True and (self.single_raft_mode is True or self.single_ccd_mode is True):
             run = self.single_raft_run
@@ -153,16 +163,27 @@ class renderFocalPlane():
         if self.user_hook is not None and testq == "User":
             return self.user_hook(run=run)
 
-        # use get_EO to fetch the test quantities from the eT results database
-        raft_list, data = self.get_EO.get_tests(site_type=self.EO_type, test_type=testq, run=run)
-        res = self.get_EO.get_results(test_type=testq, data=data, device=raft_list)
+        if run not in self.test_cache or self.current_raft not in self.test_cache[run]:
+            # use get_EO to fetch the test quantities from the eT results database
+            raft_list, data = self.get_EO.get_tests(site_type=self.EO_type, run=run)
+            res = self.get_EO.get_all_results(data=data, device=raft_list)
+            c = self.test_cache.setdefault(run, {})
+            c[raft_list] = res
 
         test_list = []
-        for ccd in res:
+
+        # fetch the test from the cache
+
+        try:
+            t = self.test_cache[run][self.current_raft][testq]
+        except KeyError:
+            raise KeyError(testq + ": not available. Reverting to previous - " + self.previous_test)
+        for ccd in t:
             # if in single CCD mode, only return that one's quantities
             if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
                 continue
-            test_list.extend(res[ccd])
+            test_list.extend(t[ccd])
+        self.testq_timer += time.time() - in_time
 
         return test_list
 
@@ -179,6 +200,7 @@ class renderFocalPlane():
                 run = self.current_run
                 run_info = self.connect.getRunResults(run=run)
                 raft_list = [[run_info['experimentSN'], "R22"]]
+                self.single_raft_name = raft_list
             # raft or CCD is on the focal plane
             elif self.single_raft_mode is True or self.single_ccd_mode is True:
                 raft_list = self.single_raft_name
@@ -245,6 +267,44 @@ class renderFocalPlane():
         return slot, run
 
 
+    def set_mode(self, mode):
+
+        self.full_FP_mode = False
+        self.single_ccd_mode = False
+        self.single_raft_mode = False
+        self.solo_raft_mode = False
+
+        if mode == "full_FP":
+            self.full_FP_mode = True
+            self.current_mode=0
+        elif mode == "single_ccd":
+            self.single_ccd_mode = True
+            self.current_mode=2
+        elif mode == "single_raft":
+            self.single_raft_mode = True
+            self.current_mode=1
+        elif mode == "solo_raft":
+            self.solo_raft_mode = True
+            self.emulate = False
+            self.current_mode=3
+
+    def parse_emulation_config(self, file_spec):
+
+        df = pd.read_csv(file_spec, header=0, skipinitialspace=True)
+        raft_frame = df.set_index('raft', drop=False)
+
+        raft_col = raft_frame["raft"]
+        raft_list = []
+        run_list = []
+
+        for raft in raft_col:
+            slot = raft_frame.loc[raft, "slot"]
+            run = raft_frame.loc[raft, "run"]
+            raft_list.append([raft, slot])
+            run_list.append(run)
+
+        return raft_list, run_list
+
     def render(self, run=None, testq=None, view=None,box=None):
 
         """
@@ -253,6 +313,10 @@ class renderFocalPlane():
         :param testq: test quantity to draw
         :return: bokeh layout of the heatmap and histogram
         """
+
+        self.testq_timer = 0
+        enter_time = time.time()
+
         self.current_run = run
         self.current_test = testq
 
@@ -311,6 +375,8 @@ class renderFocalPlane():
         cen_x_list = []
         cen_y_list = []
 
+        setup_time = time.time() - enter_time
+
         # work out all the squares for the rafts, CCDs and amps. If in single mode, suppress other rafts/
         # CCDs
         for raft in range(25):
@@ -351,31 +417,51 @@ class renderFocalPlane():
                     cen_x_list.append(cen_x)
                     cen_y_list.append(cen_y)
 
+        timing_ccd_hierarchy = 0
+
+        t_0_hierarchy = 0
+        t_hierarchy = 0
+
         for raft in range(25):
 
             if self.raft_is_there[raft] is False:
                 continue
 
-            run_q = run
+            self.current_raft = self.installed_raft_names[raft]
             if self.emulate is True and self.full_FP_mode is True:
-                run_q = self.emulated_runs[raft]
-            run_data = self.get_testq(run=run_q, testq=testq)
+                self.current_run = self.emulated_runs[raft]
+
+            try:
+                run_data = self.get_testq(run=self.current_run, testq=testq)
+            except KeyError:
+                run_data = self.get_testq(run=self.current_run, testq=self.previous_test)
 
             run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
             amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
             run_data = [[ccd_data[j] for j in amp_ordering] for ccd_data in run_data]
             run_data = [val for sublist in run_data for val in sublist]
 
-            test_q.extend(self.get_testq(run=run_q, testq=testq))
+            test_q.extend(run_data)
+#            test_q.extend(self.get_testq(run=run_q, testq=testq))
 
             num_ccd = 9
             if self.single_ccd_mode is False:
-                single_run = run
-                if self.emulate is True:
-                     _, single_run = self.get_emulated_raft_info(self.installed_raft_names[raft])
-                run_info = self.connect.getRunSummary(run=single_run)
-                run_time = run_info['begin']
-                ccd_list = self.eR.raftContents(raftName=self.installed_raft_names[raft], when=run_time)
+#                single_run = self.current_run
+#                if self.emulate is True:
+#                    _, single_run = self.get_emulated_raft_info(self.installed_raft_names[raft])
+
+                if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
+                        self.ccd_content_cache[self.current_run]:
+                    t_0_hierarchy = time.time()
+                    ccd_list_run = self.eR.raftContents(raftName=self.installed_raft_names[raft],
+                                                       run=self.current_run)
+                    t_hierarchy = time.time() - t_0_hierarchy
+                    timing_ccd_hierarchy += t_hierarchy
+                    r = self.ccd_content_cache.setdefault(self.current_run,{})
+                    r[self.installed_raft_names[raft]] = ccd_list_run
+
+                # fetch the CCD content from the cache
+                ccd_list = self.ccd_content_cache[self.current_run][self.installed_raft_names[raft]]
                 ccd_ordering = [6,3,0,7,4,1,8,5,2]
                 ccd_list = [ccd_list[i] for i in ccd_ordering]
 
@@ -403,8 +489,10 @@ class renderFocalPlane():
                     amp_number.append(amp_ordering[amp]+1)
 
 
+        ready_data_time = time.time() - enter_time
 
-        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot, ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
+        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
+                            ccd_name=ccd_name, ccd_slot=ccd_slot, amp_number=amp_number, test_q=test_q)))
 
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:
@@ -414,12 +502,14 @@ class renderFocalPlane():
                               color="green",
                               fill_alpha=0.)
 
+        heat_map_done_time = time.time() - enter_time
 
         h_q, bins = np.histogram(np.array(test_q), bins=50)
         self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q,left=bins[:-1], right=bins[1:])))
         #Using numpy to get the index of the bins to which the value is assigned
         h = figure(title=testq, tools=TOOLS, toolbar_location="below")
-        h.quad(source = self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue', fill_alpha=0.2)
+        h.quad(source = self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue',
+               fill_alpha=0.2)
         self.source.on_change('selected', self.tap_cb)
         self.histsource.on_change('selected', self.select_cb)
 
@@ -444,5 +534,13 @@ class renderFocalPlane():
         h.add_layout(Grid(dimension=1, ticker=yaxis.ticker))
 
         l = layout(row(self.heatmap,h))
+
+        done_time = time.time() - enter_time
+
+        print ("Timing: e ", enter_time, " s ", setup_time, " r ", ready_data_time, " h ",
+               heat_map_done_time, " d ", done_time, " t ", self.testq_timer, " h_ccd ",
+               timing_ccd_hierarchy)
+
+        self.previous_test = self.current_test
 
         return l

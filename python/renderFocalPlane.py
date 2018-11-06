@@ -140,11 +140,36 @@ class renderFocalPlane():
             pS = True
         else:
             pS = False
-        self.connect = Connection(operator='richard', db=db, exp='LSST-CAMERA', prodServer=pS)
+        self.connect_Prod = Connection(operator='richard', db="Prod", exp='LSST-CAMERA', prodServer=pS)
+        self.connect_Dev = Connection(operator='richard', db="Dev", exp='LSST-CAMERA', prodServer=pS)
 
-        self.eFP = exploreFocalPlane(db=db, prodServer=server)
-        self.eR = exploreRaft(db=db, prodServer=server)
-        self.get_EO = get_EO_analysis_results(db=db, server=server)
+        self.eFP_Prod = exploreFocalPlane(db="Prod", prodServer=server)
+        self.eR_Prod = exploreRaft(db="Prod", prodServer=server)
+        self.get_EO_Prod = get_EO_analysis_results(db=db, server=server)
+
+        self.eFP_Dev = exploreFocalPlane(db="Dev", prodServer=server)
+        self.eR_Dev = exploreRaft(db="Dev", prodServer=server)
+        self.get_EO_Dev = get_EO_analysis_results(db="Dev", server=server)
+
+        self.connections = {}
+        o = self.connections.setdefault("connect", {})
+        o["Prod"] = self.connect_Prod
+        o["Dev"] = self.connect_Dev
+
+        FP = self.connections.setdefault("eFP", {})
+        FP["Prod"] = self.eFP_Prod
+        FP["Dev"] = self.eFP_Dev
+
+        eR = self.connections.setdefault("eR", {})
+        eR["Prod"] = self.eR_Prod
+        eR["Dev"] = self.eR_Dev
+
+        EO = self.connections.setdefault("get_EO", {})
+        EO["Prod"] = self.get_EO_Prod
+        EO["Dev"] = self.get_EO_Dev
+
+        self.dbsel = "Prod"
+
 
     def get_testq(self, run=None, testq=None):
         """
@@ -165,8 +190,9 @@ class renderFocalPlane():
 
         if run not in self.test_cache or self.current_raft not in self.test_cache[run]:
             # use get_EO to fetch the test quantities from the eT results database
-            raft_list, data = self.get_EO.get_tests(site_type=self.EO_type, run=run)
-            res = self.get_EO.get_all_results(data=data, device=raft_list)
+            raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
+                                                                               run=run)
+            res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
             c = self.test_cache.setdefault(run, {})
             c[raft_list] = res
 
@@ -194,11 +220,11 @@ class renderFocalPlane():
         """
         if self.emulate is False:
             if self.full_FP_mode is True:
-                raft_list = self.eFP.focalPlaneContents()
+                raft_list = self.connections["connect"][self.dbsel].focalPlaneContents()
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
                 run = self.current_run
-                run_info = self.connect.getRunResults(run=run)
+                run_info = self.connections["connect"][self.dbsel].getRunResults(run=run)
                 raft_list = [[run_info['experimentSN'], "R22"]]
                 self.single_raft_name = raft_list
             # raft or CCD is on the focal plane
@@ -321,11 +347,15 @@ class renderFocalPlane():
         self.current_test = testq
 
         # figure out if this is BNL or I&T data from the run summary in eT
-        run_sum = self.connect.getRunSummary(run=run)
+        run_sum = self.connections["connect"][self.dbsel].getRunSummary(run=run)
         if "Integration" in run_sum["subsystem"]:
             self.EO_type = "I&T-Raft"
         else:
             self.EO_type = "BNL-Raft"
+
+        self.dbsel = "Prod"
+        if 'D' in self.current_run:
+            self.dbsel = "Dev"
 
         raft_list = self.get_raft_content()
 
@@ -431,6 +461,12 @@ class renderFocalPlane():
             if self.emulate is True and self.full_FP_mode is True:
                 self.current_run = self.emulated_runs[raft]
 
+
+            # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
+            self.dbsel = "Prod"
+            if 'D' in run:
+                self.dbsel = "Dev"
+
             try:
                 run_data = self.get_testq(run=self.current_run, testq=testq)
             except KeyError:
@@ -453,7 +489,8 @@ class renderFocalPlane():
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
                     t_0_hierarchy = time.time()
-                    ccd_list_run = self.eR.raftContents(raftName=self.installed_raft_names[raft],
+                    ccd_list_run = self.connections["eR"][self.dbsel].raftContents(
+                        raftName=self.installed_raft_names[raft],
                                                        run=self.current_run)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy

@@ -37,8 +37,6 @@ p_args = parser.parse_args()
 
 rFP = renderFocalPlane(db=p_args.db)
 
-eR = rFP.eR
-
 # set a default emulation config
 raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
 run_list = [5731, 6259]
@@ -90,7 +88,7 @@ def tap_input(attr, old, new):
     if rFP.single_ccd_mode is True:
         rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
 
-        raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+        raftContents = rFP.connections["eR"][rFP.dbsel].raftContents(raftName=rFP.single_raft_name[0][0])
         ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
         drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)
         rFP.drop_ccd = drop_ccd
@@ -234,7 +232,7 @@ def update_dropdown_modes(sattr, old, new):
             rFP.single_ccd_mode = True
             #if rFP.single_raft_name == []:
             #    rFP.single_raft_name = [raft_list[1]]
-            raftContents = eR.raftContents(raftName=rFP.single_raft_name[0][0])
+            raftContents = rFP.connections["eR"][rFP.dbsel].raftContents(raftName=rFP.single_raft_name[0][0])
             ccd_menu = [(tup[1]+': '+tup[0],tup[0]) for tup in raftContents]
             print(ccd_menu)
             drop_ccd = Dropdown(label="Select CCD from " + rFP.single_raft_name[0][0][-7:], button_type="warning", menu=ccd_menu)

@@ -153,7 +153,10 @@ drop_modes = Dropdown(label="Mode: " + menu_modes[rFP.current_mode][0], button_t
                       menu=menu_modes)
 
 # set up the dropdown menu for links, along with available modes list
-menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg")]
+menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
+              ("Single Raft Run Plots",
+               "http://slac.stanford.edu/exp/lsst/camera/SingleRaftEOPlots//bokehDashboard.html")
+               ]
 
 drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank');""")
 

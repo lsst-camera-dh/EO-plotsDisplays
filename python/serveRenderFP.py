@@ -1,6 +1,6 @@
 from __future__ import print_function
 from renderFocalPlane import renderFocalPlane
-from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter, GroupFilter,Label
+from bokeh.models import TapTool, CustomJS, ColumnDataSource, CDSView, BooleanFilter, OpenURL,Label
 from bokeh.plotting import figure, output_file, show, save, curdoc
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
@@ -152,6 +152,15 @@ menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP s
 drop_modes = Dropdown(label="Mode: " + menu_modes[rFP.current_mode][0], button_type="success",
                       menu=menu_modes)
 
+# set up the dropdown menu for links, along with available modes list
+menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg")]
+
+drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank');""")
+
+drop_links = Dropdown(label="Useful Links", button_type="success",
+                      menu=menu_links)
+drop_links.js_on_change('value', drop_links_callback)
+
 # set up run number text box - disable it in emulate mode
 text_input = TextInput(value=str(rFP.get_current_run()), title="Select Run")
 if rFP.emulate is True:
@@ -161,7 +170,7 @@ if rFP.emulate is True:
 button = Button(label="Emulate Mode", button_type="success")
 button_file = Button(label="Upload Emulation Config", button_type="success")
 
-interactors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
+interactors = layout(row(drop_links, text_input, drop_test, drop_modes), row(button, button_file))
 
 m = layout(interactors, l)
 
@@ -264,6 +273,16 @@ def update_dropdown_modes(sattr, old, new):
 
 drop_modes.on_change('value', update_dropdown_modes)
 
+drop_links_callback = CustomJS(code="""window.open(cb_obj.value,'_self'));""")
+drop_links.js_on_change('value', drop_links_callback)
+
+"""
+def update_dropdown_links(sattr, old, new):
+    url = drop_links.value
+    OpenURL(url=url)
+
+drop_links.on_change('value', update_dropdown_links)
+"""
 
 def update_text_input(sattr, old, new):
     if rFP.emulate is False:

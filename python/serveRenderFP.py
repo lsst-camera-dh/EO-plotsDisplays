@@ -155,10 +155,10 @@ drop_modes = Dropdown(label="Mode: " + menu_modes[rFP.current_mode][0], button_t
 # set up the dropdown menu for links, along with available modes list
 menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
               ("Single Raft Run Plots",
-               "http://slac.stanford.edu/exp/lsst/camera/SingleRaftEOPlots//bokehDashboard.html")
+               "http://slac.stanford.edu/exp/lsst/camera/SingleRaftEOPlots/bokehDashboard.html")
                ]
 
-drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank');""")
+drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank')""")
 
 drop_links = Dropdown(label="Useful Links", button_type="success",
                       menu=menu_links)
@@ -191,7 +191,7 @@ def update_dropdown_ccd(sattr, old, new):
     ccd_name = rFP.drop_ccd.value
     ccd_slot = rFP.slot_mapping[ccd_name]
     rFP.single_ccd_name =  [[ccd_name, ccd_slot, "Dummy REB"]]
-    interactors = layout(row(text_input, drop_test,rFP.drop_ccd, drop_modes), row(button, button_file))
+    interactors = layout(row(drop_links, text_input, drop_test,rFP.drop_ccd, drop_modes), row(button, button_file))
     l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
     m_new = layout(interactors, l_new)
     m.children = m_new.children
@@ -202,7 +202,7 @@ def update_dropdown_raft(sattr, old, new):
     raft_slot_mapping = {pair[0]:pair[1] for pair in raft_list}
     raft_slot = raft_slot_mapping[raft_name]
     rFP.single_raft_name = [[raft_name, raft_slot]]
-    interactors = layout(row(text_input, drop_test,rFP.drop_raft, drop_modes), row(button, button_file))
+    interactors = layout(row(drop_links, text_input, drop_test,rFP.drop_raft, drop_modes), row(button, button_file))
     l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
     m_new = layout(interactors, l_new)
     m.children = m_new.children
@@ -220,7 +220,7 @@ def update_dropdown_modes(sattr, old, new):
     if new_mode == "Full Focal Plane":
         rFP.full_FP_mode = True
         rFP.emulate = True  # no real run data yet!
-        interactors = layout(row(text_input, drop_test,drop_modes), row(button, button_file))
+        interactors = layout(row(drop_links, text_input, drop_test,drop_modes), row(button, button_file))
         l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
         m_new = layout(interactors, l_new)
         m.children = m_new.children
@@ -232,7 +232,7 @@ def update_dropdown_modes(sattr, old, new):
             drop_raft = Dropdown(label="Select Raft",button_type="warning", menu=raft_menu)
             rFP.drop_raft = drop_raft
             drop_raft.on_change('value',update_dropdown_raft)
-            interactors = layout(row(text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
+            interactors = layout(row(drop_links, text_input, drop_test,drop_raft, drop_modes), row(button, button_file))
             l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
             m_new = layout(interactors, l_new)
             m.children = m_new.children
@@ -251,7 +251,7 @@ def update_dropdown_modes(sattr, old, new):
             rFP.drop_ccd = drop_ccd
             rFP.slot_mapping = {tup[0]:tup[1] for tup in raftContents}
             drop_ccd.on_change('value', update_dropdown_ccd)
-            interactors = layout(row(text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
+            interactors = layout(row(drop_links, text_input, drop_test,drop_ccd, drop_modes), row(button, button_file))
             l_new = rFP.render(run=rFP.get_current_run(), testq=rFP.get_current_test())
             m_new = layout(interactors, l_new)
             m.children = m_new.children
@@ -275,17 +275,6 @@ def update_dropdown_modes(sattr, old, new):
     drop_modes.label = "Mode: " + new_mode
 
 drop_modes.on_change('value', update_dropdown_modes)
-
-drop_links_callback = CustomJS(code="""window.open(cb_obj.value,'_self'));""")
-drop_links.js_on_change('value', drop_links_callback)
-
-"""
-def update_dropdown_links(sattr, old, new):
-    url = drop_links.value
-    OpenURL(url=url)
-
-drop_links.on_change('value', update_dropdown_links)
-"""
 
 def update_text_input(sattr, old, new):
     if rFP.emulate is False:

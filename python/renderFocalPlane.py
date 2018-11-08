@@ -327,7 +327,7 @@ class renderFocalPlane():
             slot = raft_frame.loc[raft, "slot"]
             run = raft_frame.loc[raft, "run"]
             raft_list.append([raft, slot])
-            run_list.append(run)
+            run_list.append(str(run))
 
         return raft_list, run_list
 

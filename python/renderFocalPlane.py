@@ -534,10 +534,10 @@ class renderFocalPlane():
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:
             self.heatmap.rect(x=raft_x_list, y=raft_y_list, width=self.raft_width,
-                              height=self.raft_width, color="blue", fill_alpha=0.)
+                              height=self.raft_width, color="blue", fill_alpha=0., line_width=3)
             self.heatmap.rect(x=cen_x_list, y=cen_y_list, width=self.ccd_width, height=self.ccd_width,
                               color="green",
-                              fill_alpha=0.)
+                              fill_alpha=0., line_width=2)
 
         heat_map_done_time = time.time() - enter_time
 

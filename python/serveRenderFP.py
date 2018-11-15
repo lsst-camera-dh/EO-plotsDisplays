@@ -2,6 +2,8 @@ from __future__ import print_function
 from renderFocalPlane import renderFocalPlane
 from bokeh.plotting import curdoc
 from bokeh.io import export_png
+from bokeh.layouts import row, layout
+
 import argparse
 
 try:
@@ -63,7 +65,7 @@ m_lay = rFP.render(run=ini_run, testq=ini_test)
 if p_args.png is not None:
     export_png(rFP.map_layout,p_args.png)
 
-
+rFP.layout = layout(rFP.interactors,rFP.map_layout)
 
 curdoc().add_root(rFP.layout)
 curdoc().title = "Focal Plane Heat Map"

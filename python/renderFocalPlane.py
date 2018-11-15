@@ -504,9 +504,8 @@ class renderFocalPlane():
         new_test = self.drop_test.value
 
         l_new = self.render(run=self.get_current_run(), testq=new_test)
-#        m_new = layout(self.interactors, l_new)
-        m_new = layout(self.interactors, self.map_layout)
-        self.layout.children = l_new.children
+        m_new = layout(self.interactors, l_new)
+        self.layout.children = m_new.children
 
     def update_dropdown_ccd(self, sattr, old, new):
         ccd_name = self.drop_ccd.value
@@ -887,6 +886,6 @@ class renderFocalPlane():
 
         self.previous_test = self.current_test
 
-        self.layout = layout(self.interactors, self.map_layout)
+#        self.layout = layout(self.interactors, self.map_layout)
 
         return self.map_layout

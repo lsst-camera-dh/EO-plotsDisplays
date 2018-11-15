@@ -13,6 +13,7 @@ from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
 from bokeh.models import CustomJS, ColumnDataSource, CDSView, BooleanFilter
 from bokeh.models.widgets import TextInput, Dropdown, Button
+from bokeh.plotting import curdoc
 
 import time
 
@@ -576,7 +577,7 @@ class renderFocalPlane():
                 self.drop_ccd.menu=ccd_menu
                 self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
                 self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
-                                              self.drop_ccd, self.drop_modes), self.row(self.button,
+                                              self.drop_ccd, self.drop_modes), row(self.button,
                                                                                    self.button_file))
                 l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
                 m_new = layout(self.interactors, l_new)
@@ -597,6 +598,12 @@ class renderFocalPlane():
             self.emulate = False
             self.button.label = "Run Mode"
             self.text_input.title = "Select Run"
+
+            self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
+                                          self.drop_modes))
+            l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+            m_new = layout(self.interactors, l_new)
+            self.layout.children = m_new.children
 
         self.drop_modes.label = "Mode: " + new_mode
 

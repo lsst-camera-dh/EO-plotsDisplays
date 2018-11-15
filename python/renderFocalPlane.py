@@ -347,7 +347,7 @@ class renderFocalPlane():
                     self.installed_raft_names[i] = raft_list[raft][0]
                     if self.emulate is True:
                         self.emulated_runs[i] = self.emulate_run_list[raft]
-                    self.emulate_raft_list = raft_list
+#                    self.emulate_raft_list = raft_list
                     break
 
         self.current_raft_list = raft_list

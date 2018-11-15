@@ -543,6 +543,7 @@ class renderFocalPlane():
         if new_mode == "Full Focal Plane":
             self.full_FP_mode = True
             self.emulate = True  # no real run data yet!
+            self.button.label = "Emulate Mode"
             self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
                                       row(self.button, self.button_file))
             l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
@@ -551,6 +552,8 @@ class renderFocalPlane():
 
         elif new_mode == "FP single raft":
             try:
+                self.emulate = True  # no real run data yet!
+                self.button.label = "Emulate Mode"
                 self.single_raft_mode = True
                 raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
                 self.drop_raft.label="Select Raft"
@@ -566,6 +569,8 @@ class renderFocalPlane():
 
         elif new_mode == "FP single CCD":
             try:
+                self.emulate = True  # no real run data yet!
+                self.button.label = "Emulate Mode"
                 self.single_ccd_mode = True
                 # if self.single_raft_name == []:
                 #    self.single_raft_name = [raft_list[1]]

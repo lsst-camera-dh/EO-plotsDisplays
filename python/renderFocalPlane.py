@@ -6,12 +6,14 @@ from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
 from  eTraveler.clientAPI.connection import Connection
 
-from bokeh.models import ColumnDataSource, LinearAxis, Grid, LogColorMapper, ColorBar, \
-    LogTicker, DataRange1d
+from bokeh.models import LinearAxis, Grid, LogColorMapper, ColorBar, \
+    LogTicker
 from bokeh.plotting import figure
 from bokeh.palettes import Viridis6 as palette
 from bokeh.layouts import row, layout
-from bokeh.models.glyphs import VBar
+from bokeh.models import CustomJS, ColumnDataSource, CDSView, BooleanFilter
+from bokeh.models.widgets import TextInput, Dropdown, Button
+
 import time
 
 """
@@ -63,10 +65,97 @@ class renderFocalPlane():
         self.current_raft = None
         self.EO_type = "I&T-Raft"
         self.current_mode = 0
+        self.current_raft_list = []
 
         self.user_hook = None
-        self.tap_cb = None
-        self.select_cb = None
+        self.tap_cb = self.tap_input
+        self.select_cb = self.select_input
+
+        # set up run number text box - disable it in emulate mode
+        self.text_input = TextInput(value=str(self.get_current_run()), title="Select Run")
+
+        if self.emulate is True:
+            self.text_input.title = "Select Run Disabled"
+
+        # set up the dropdown menu for modes, along with available modes list
+        self.menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
+                      ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft")]
+
+        self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
+                                   button_type="success",
+                              menu=self.menu_modes)
+
+        # set up the dropdown menu for links, along with available modes list
+        self.menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
+                      ("Single Raft Run Plots",
+                       "http://slac.stanford.edu/exp/lsst/camera/SingleRaftEOPlots/bokehDashboard.html"),
+                      ("List of Prod Good Raft Runs",
+                       "https://lsst-camera.slac.stanford.edu/DataPortal/runList.jsp?Status=-1&Traveler=any&Subsystem"
+                       "=any&Site=any&Label=25&Run+min=&Run+max=&submit=Filter&dataSourceMode=Prod"),
+                      ("List of Dev Good Raft Runs",
+                       "https://lsst-camera.slac.stanford.edu/DataPortal/runList.jsp?Status=-1&Traveler=any&Subsystem"
+                       "=any&Site=any&Label=25&Run+min=&Run+max=&submit=Filter&dataSourceMode=Dev")
+                      ]
+
+        self.drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank')""")
+
+        self.drop_links = Dropdown(label="Useful Links", button_type="success",
+                              menu=self.menu_links)
+        self.drop_links.js_on_change('value', self.drop_links_callback)
+
+        self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[])
+        self.drop_raft.on_change('value', self.update_dropdown_raft)
+
+        self.drop_ccd = Dropdown(label="Select CCD",
+                                 button_type="warning", menu=[])
+        self.drop_ccd.on_change('value', self.update_dropdown_ccd)
+
+        # define buttons to toggle emulation mode, and to fetch a config txt file
+        self.button = Button(label="Emulate Mode", button_type="success")
+        self.button_file = Button(label="Upload Emulation Config", button_type="success")
+
+        # readining in the emulation config file depends on two callbacks - one triggering reading the file into the
+        # ColumnDataSource, coupled with looking for a change on the ColumnDataSource
+        self.file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
+
+        self.button_file.callback = CustomJS(args=dict(file_source=self.file_source), code="""
+        function read_file(filename) {
+            var reader = new FileReader();
+            reader.onload = load_handler;
+            reader.onerror = error_handler;
+            // readAsDataURL represents the file's data as a base64 encoded string
+            reader.readAsDataURL(filename);
+        }
+
+        function load_handler(event) {
+            var b64string = event.target.result;
+            file_source.data = {'file_contents' : [b64string], 'file_name':[input.files[0].name]};
+            file_source.change.emit();
+        }
+
+        function error_handler(evt) {
+            if(evt.target.error.name == "NotReadableError") {
+                alert("Can't read file!");
+            }
+        }
+
+        var input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.onchange = function(){
+            if (window.FileReader) {
+                read_file(input.files[0]);
+            } else {
+                alert('FileReader is not supported in this browser');
+            }
+        }
+        input.click();
+        """)
+
+        self.drop_modes.on_change('value', self.update_dropdown_modes)
+        self.text_input.on_change('value', self.update_text_input)
+        self.button.on_click(self.update_button)
+        self.file_source.on_change('data', self.file_callback)
+
         self.heatmap = None
         self.heatmap_rect = None
 
@@ -91,6 +180,15 @@ class renderFocalPlane():
                      ('Dark Current 95CL', 'dark_current_95CL'),
                      ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
                      ('Nonlinearity', 'max_frac_dev')]
+
+        # drop down menu of test names, taking the menu from self.menu_test
+        self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test)
+        self.drop_test.on_change('value', self.update_dropdown_test)
+
+        self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
+                                  row(self.button, self.button_file))
+        self.layout = self.interactors
+        self.map_layout = self.layout
 
         self.menu_ccd = [('S00','S00'),('S01','S01'),('S02','S02'),('S10','S10'),('S11','S11'),
                         ('S12','S12'),('S20','S20'),('S21','S21'),('S22','S22')]
@@ -249,7 +347,10 @@ class renderFocalPlane():
                     self.installed_raft_names[i] = raft_list[raft][0]
                     if self.emulate is True:
                         self.emulated_runs[i] = self.emulate_run_list[raft]
+                    self.emulate_raft_list = raft_list
                     break
+
+        self.current_raft_list = raft_list
         return raft_list
 
     def set_emulation(self, raft_list, run_list):
@@ -263,6 +364,7 @@ class renderFocalPlane():
 
         self.emulate_raft_list = raft_list
         self.emulate_run_list = run_list
+        self.current_raft_list = raft_list
 
         self.menu_test.append(("User Supplied", "User"))
 
@@ -329,7 +431,212 @@ class renderFocalPlane():
             raft_list.append([raft, slot])
             run_list.append(str(run))
 
+        self.emulate_raft_list = raft_list
+
         return raft_list, run_list
+
+    def tap_input(self,attr, old, new):
+        """
+        Handle the click in the heatmap. Does nothing if in full Focal Plane mode
+        :param attr:
+        :param old: previous value of self.source
+        :param new: new value of self.source
+        :return: nothing
+        """
+        # The index of the selected glyph is : new['1d']['indices'][0]
+        raft_name = self.source.data['raft_name'][new['1d']['indices'][0]]
+        raft_slot = self.source.data['raft_slot'][new['1d']['indices'][0]]
+        ccd_name = self.source.data['ccd_name'][new['1d']['indices'][0]]
+        ccd_slot = self.source.data['ccd_slot'][new['1d']['indices'][0]]
+
+        self.single_raft_name = [[raft_name, raft_slot]]
+        if self.emulate is True:
+            _, self.single_raft_run = self.get_emulated_raft_info(self.single_raft_name[0][0])
+        else:
+            self.single_raft_run = self.get_current_run
+
+        if self.single_raft_mode is True:
+            raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
+            self.interactors = layout(row(self.text_input, self.drop_test, self.drop_raft, self.drop_modes),
+                                      row(self.button, self.button_file))
+            l_new = self.render(run=self.single_raft_run, testq=self.get_current_test())
+            m_new = layout(self.interactors, l_new)
+            self.layout.children = m_new.children
+
+        if self.single_ccd_mode is True:
+            self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
+
+            raftContents = self.connections["eR"][self.dbsel].raftContents(raftName=self.single_raft_name[0][0])
+            ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
+
+            self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
+            self.interactors = layout(row(self.text_input, self.drop_test, self.drop_ccd, self.drop_modes),
+                                      row(self.button, self.button_file))
+            l_new = self.render(run=self.single_raft_run, testq=self.get_current_test())
+            m_new = layout(self.interactors, l_new)
+            self.layout.children = m_new.children
+
+            # l_new = self.render(run=self.single_raft_run, testq=self.get_current_test())
+            # m_new = layout(self.interactors, l_new)
+            # self.layout.children = m_new.children
+
+    def select_input(self, attr, old, new):
+        """
+        Handle the selections in the heatmap  or histogram.  Does nothing if
+        not in full Focal Plane mode
+        :param attr:
+        :param old: previous value of self.source
+        :param new: new value of self.source
+        :return: nothing
+        """
+
+        if self.full_FP_mode is True:
+            # The indices of the selected glyph is : new['1d']['indices']
+            min = self.histsource.data['left'][new['1d']['indices'][0]]
+            max = self.histsource.data['right'][new['1d']['indices'][-1]]
+            booleans = [True if val >= min and val <= max else False for val in self.source.data['test_q']]
+            view = CDSView(source=self.source, filters=[BooleanFilter(booleans)])
+            l_new = self.render(run=self.get_current_run(), testq=self.get_current_test(), view=view)
+            m_new = layout(self.interactors, l_new)
+            self.layout.children = m_new.children
+
+    def update_dropdown_test(self, sattr, old, new):
+        new_test = self.drop_test.value
+
+        l_new = self.render(run=self.get_current_run(), testq=new_test)
+#        m_new = layout(self.interactors, l_new)
+        m_new = layout(self.interactors, self.map_layout)
+        self.layout.children = l_new.children
+
+    def update_dropdown_ccd(self, sattr, old, new):
+        ccd_name = self.drop_ccd.value
+        ccd_slot = self.slot_mapping[ccd_name]
+        self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
+        self.drop_ccd.menu = []
+        self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_ccd,
+                                      self.drop_modes), row(self.button, self.button_file))
+        l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+        m_new = layout(self.interactors, l_new)
+        self.layout.children = m_new.children
+
+    def update_dropdown_raft(self, sattr, old, new):
+        # Update from raft_list for now - need to add case where we have all rafts.
+        raft_name = self.drop_raft.value
+        raft_slot_mapping = {pair[0]: pair[1] for pair in self.current_raft_list}
+        raft_slot = raft_slot_mapping[raft_name]
+        self.drop_raft.menu = []
+        self.single_raft_name = [[raft_name, raft_slot]]
+        self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_raft,
+                                      self.drop_modes), row(self.button, self.button_file))
+        l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+        m_new = layout(self.interactors, l_new)
+        self.layout.children = m_new.children
+
+    def update_dropdown_modes(self, sattr, old, new):
+        new_mode = self.drop_modes.value
+
+        self.single_raft_mode = False
+        self.single_ccd_mode = False
+        self.solo_raft_mode = False
+        self.full_FP_mode = False
+
+        if new_mode == "Full Focal Plane":
+            self.full_FP_mode = True
+            self.emulate = True  # no real run data yet!
+            self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
+                                      row(self.button, self.button_file))
+            l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+            m_new = layout(self.interactors, l_new)
+            self.layout.children = m_new.children
+
+        elif new_mode == "FP single raft":
+            try:
+                self.single_raft_mode = True
+                raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
+                self.drop_raft.label="Select Raft"
+                self.drop_raft.menu=raft_menu
+                self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
+                                              self.drop_raft, self.drop_modes), row(self.button,
+                                                                                    self.button_file))
+                l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+                m_new = layout(self.interactors, l_new)
+                self.layout.children = m_new.children
+            except IndexError:
+                print('Click on a raft in the heat map.')
+
+        elif new_mode == "FP single CCD":
+            try:
+                self.single_ccd_mode = True
+                # if self.single_raft_name == []:
+                #    self.single_raft_name = [raft_list[1]]
+                raftContents = self.connections["eR"][self.dbsel].raftContents(
+                    raftName=self.single_raft_name[0][0])
+                ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
+                print(ccd_menu)
+                self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
+                self.drop_ccd.menu=ccd_menu
+                self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
+                self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
+                                              self.drop_ccd, self.drop_modes), self.row(self.button,
+                                                                                   self.button_file))
+                l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+                m_new = layout(self.interactors, l_new)
+                self.layout.children = m_new.children
+            except IndexError:
+                print('Click on a CCD in the heat map.')
+                # box = Label(x=70, y=70, x_units='screen', y_units='screen',
+                #     text='Click on CCD.', render_mode='css',
+                #     border_line_color='black', border_line_alpha=1.0,
+                #     background_fill_color='white', background_fill_alpha=1.0)
+                # nteractors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
+                # _new = self.render(run=self.get_current_run(), testq=self.get_current_test(),box=box)
+                # m_new = layout(self.interactors, l_new)
+                # self.layout.children = m_new.children
+        # in solo mode, ensure run selecton is re-enabled
+        elif new_mode == "Solo Raft":
+            self.solo_raft_mode = True
+            self.emulate = False
+            self.button.label = "Run Mode"
+            self.text_input.title = "Select Run"
+
+        self.drop_modes.label = "Mode: " + new_mode
+
+    def update_text_input(self, sattr, old, new):
+        if self.emulate is False:
+            self.text_input.title = "Select Run"
+            new_run = self.text_input.value
+
+            l_new_run = self.render(run=new_run, testq=self.get_current_test())
+            m_new_run = layout(self.interactors, l_new_run)
+            self.layout.children = m_new_run.children
+        else:
+            self.text_input.title = "Select Run Disabled"
+
+    def update_button(self):
+        current_mode = self.emulate_raft_list
+        new_mode = not current_mode
+
+        self.emulate_raft_list = new_mode
+        if new_mode is True:
+            self.button.label = "Emulate Mode"
+            l_new_run = self.render(run=self.get_current_run(), testq=self.get_current_test())
+            m_new_run = layout(self.interactors, l_new_run)
+            self.layout.children = m_new_run.children
+
+        else:
+            self.button.label = 'Run Mode'
+
+    def file_callback(self, attr, old, new):
+        filename = self.file_source.data['file_name'][0]
+
+        raft_list, run_list = self.parse_emulation_config(filename)
+
+        self.set_emulation(raft_list, run_list)
+
+        l_new_run = self.render(run=self.current_run, testq=self.get_current_test())
+        m_new_run = layout(self.interactors, l_new_run)
+        self.layout.children = m_new_run.children
+
 
     def render(self, run=None, testq=None, view=None,box=None):
 
@@ -570,7 +877,7 @@ class renderFocalPlane():
         h.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
         h.add_layout(Grid(dimension=1, ticker=yaxis.ticker))
 
-        l = layout(row(self.heatmap,h))
+        self.map_layout = layout(row(self.heatmap,h))
 
         done_time = time.time() - enter_time
 
@@ -580,4 +887,6 @@ class renderFocalPlane():
 
         self.previous_test = self.current_test
 
-        return l
+        self.layout = layout(self.interactors, self.map_layout)
+
+        return self.map_layout

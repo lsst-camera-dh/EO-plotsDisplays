@@ -433,8 +433,17 @@ class renderFocalPlane():
             run_list.append(str(run))
 
         self.emulate_raft_list = raft_list
+        self.current_raft_list = raft_list
 
         return raft_list, run_list
+
+    def get_run(self, raft=None):
+        if self.emulate is False:
+            run = self.current_run
+        else:
+            run = self.emulate_raft_list[raft]
+
+        return run
 
     def tap_input(self,attr, old, new):
         """
@@ -776,7 +785,8 @@ class renderFocalPlane():
                 continue
 
             self.current_raft = self.installed_raft_names[raft]
-            if self.emulate is True and self.full_FP_mode is True:
+#            if self.emulate is True and self.full_FP_mode is True:
+            if self.emulate is True:
                 self.current_run = self.emulated_runs[raft]
 
 

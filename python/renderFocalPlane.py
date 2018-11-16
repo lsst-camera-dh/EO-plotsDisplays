@@ -563,7 +563,7 @@ class renderFocalPlane():
                 self.emulate = True  # no real run data yet!
                 self.button.label = "Emulate Mode"
                 self.single_raft_mode = True
-                raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
+                raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_raft_list]
                 self.drop_raft.label="Select Raft"
                 self.drop_raft.menu=raft_menu
                 self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,

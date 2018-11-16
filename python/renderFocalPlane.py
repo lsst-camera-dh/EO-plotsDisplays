@@ -162,7 +162,6 @@ class renderFocalPlane():
 
         self.emulate_raft_list = []
 
-        self.drop_ccd = None
         self.slot_mapping = None
 
         self.testq_timer = 0

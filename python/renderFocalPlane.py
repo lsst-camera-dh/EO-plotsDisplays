@@ -784,7 +784,6 @@ class renderFocalPlane():
                 continue
 
             self.current_raft = self.installed_raft_names[raft]
-#            if self.emulate is True and self.full_FP_mode is True:
             if self.emulate is True:
                 self.current_run = self.emulated_runs[raft]
 
@@ -809,9 +808,6 @@ class renderFocalPlane():
 
             num_ccd = 9
             if self.single_ccd_mode is False:
-#                single_run = self.current_run
-#                if self.emulate is True:
-#                    _, single_run = self.get_emulated_raft_info(self.installed_raft_names[raft])
 
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
@@ -906,7 +902,5 @@ class renderFocalPlane():
                timing_ccd_hierarchy)
 
         self.previous_test = self.current_test
-
-#        self.layout = layout(self.interactors, self.map_layout)
 
         return self.map_layout

@@ -560,11 +560,11 @@ class renderFocalPlane():
             self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
                                 width=self.ccd_width/2.,
                                 color="black",
-                                fill_alpha=0.7, fill_color="black",view=view)
+                                fill_alpha=0.7, fill_color="black",view=view, line_width = 0.5)
         self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
                               width=self.ccd_width/2.,
                               color="black",
-                              fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper})
+                              fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper}, line_width = 0.5)
         if box is not None:
             h.add_layout(box)
         xaxis = LinearAxis()

@@ -96,11 +96,15 @@ class renderFocalPlane():
                         ('S12','S12'),('S20','S20'),('S21','S21'),('S22','S22')]
 
         # list of the slot names and their order on the focal plane
-        self.raft_slot_names = ["C0","R34", "R24", "R14","C1",
-                                "R43", "R33", "R23", "R13", "R03",
-                                "R42", "R32", "R22", "R12", "R02",
-                                "R41", "R31", "R21", "R11", "R01",
-                                "C2","R30", "R20", "R10","C4" ]
+        self.raft_slot_names = ["C0","R41", "R42", "R43","C1",
+                                "R30", "R31", "R32", "R33", "R34",
+                                "R20", "R21", "R22", "R23", "R24",
+                                "R10", "R11", "R12", "R13", "R14",
+                                "C2","R01", "R02", "R03","C4" ]
+        self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
+        self.ccd_ordering = ['S00','S01','S02',
+                            'S10','S11','S12',
+                            'S20','S21','S22']
 
         # booleans for whether a slot on the FP is occupied
         self.raft_is_there = [False] * 25
@@ -473,8 +477,7 @@ class renderFocalPlane():
                 run_data = self.get_testq(run=self.current_run, testq=self.previous_test)
 
             run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
-            amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
-            run_data = [[ccd_data[j] for j in amp_ordering] for ccd_data in run_data]
+            run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
             run_data = [val for sublist in run_data for val in sublist]
 
             test_q.extend(run_data)
@@ -499,8 +502,8 @@ class renderFocalPlane():
 
                 # fetch the CCD content from the cache
                 ccd_list = self.ccd_content_cache[self.current_run][self.installed_raft_names[raft]]
-                ccd_ordering = [6,3,0,7,4,1,8,5,2]
-                ccd_list = [ccd_list[i] for i in ccd_ordering]
+                ccd_map = dict((ccd[1], ccd) for ccd in ccd_list)
+                ccd_list = [ccd_map[ccd] for ccd in self.ccd_ordering]
 
             else:
                 ccd_list = self.single_ccd_name
@@ -523,7 +526,7 @@ class renderFocalPlane():
                     raft_slot.append(self.raft_slot_names[raft])
                     ccd_name.append(ccd_list[ccd][0])
                     ccd_slot.append(ccd_list[ccd][1])
-                    amp_number.append(amp_ordering[amp]+1)
+                    amp_number.append(self.amp_ordering[amp]+1)
 
 
         ready_data_time = time.time() - enter_time

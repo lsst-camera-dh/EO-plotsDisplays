@@ -20,9 +20,8 @@ Driver for renderFocalPlane.py - defines interactors and requests the display to
 parser = argparse.ArgumentParser(
     description='Create heatmap of Camera EO test data quantities.')
 
-
 parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
-parser.add_argument('-r', '--run', default=None, help="run number")
+parser.add_argument('-r', '--run', default="6374D", help="run number")
 parser.add_argument('--hook', default=None, help="name of user hook module to load")
 parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
 parser.add_argument('-e', '--emulate', default=None, help="file spec for emulation config")
@@ -33,27 +32,22 @@ p_args = parser.parse_args()
 
 rFP = renderFocalPlane(db=p_args.db)
 
-# set a default emulation config
-raft_list = [["LCA-11021_RTM-003_ETU2", "R10"], ["LCA-11021_RTM-005", "R22"]]
-run_list = ["5731", "6259"]
-
 if p_args.emulate is not None:
     raft_list, run_list = rFP.parse_emulation_config(p_args.emulate)
-
-rFP.set_emulation(raft_list, run_list)
+    # set a default emulation config
 
 # don't set single mode yet!
 
 rFP.set_mode(p_args.mode)
 
 if p_args.hook is not None:
-     mod = __import__(p_args.hook)
-     rFP.user_hook = mod.hook
+    mod = __import__(p_args.hook)
+    rFP.user_hook = mod.hook
 
 # start up with a nominal run number and test name
 
-ini_run ="5731"
-ini_test = "gain"
+ini_run = p_args.run
+ini_test = p_args.test
 
 if p_args.run is not None:
     ini_run = p_args.run
@@ -63,9 +57,9 @@ if p_args.test is not None:
 m_lay = rFP.render(run=ini_run, testq=ini_test)
 
 if p_args.png is not None:
-    export_png(rFP.map_layout,p_args.png)
+    export_png(rFP.map_layout, p_args.png)
 
-rFP.layout = layout(rFP.interactors,rFP.map_layout)
+rFP.layout = layout(rFP.interactors, rFP.map_layout)
 
 curdoc().add_root(rFP.layout)
 curdoc().title = "Focal Plane Heat Map"

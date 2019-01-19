@@ -347,8 +347,7 @@ class renderFocalPlane():
         """
         if self.emulate is False:
             if self.full_FP_mode is True:
-                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents()
-                #raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
+                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
                 run = self.current_run

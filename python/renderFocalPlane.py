@@ -310,6 +310,8 @@ class renderFocalPlane():
             except KeyError:
                 raise KeyError(testq + ": not available. Reverting to previous - " + self.previous_test)
             for ccd in t:
+                if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
+                    continue
                 test_list.extend(t[ccd])
 
         else:
@@ -317,13 +319,24 @@ class renderFocalPlane():
                 t = self.test_cache[run][self.current_raft][testq]
             except KeyError:
                 raise KeyError(testq + ": not available. Reverting to previous - " + self.previous_test)
+
+            ccd_name = ""
             for ccd in t:
                 # if in single CCD mode, only return that one's quantities
-                if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
+                ccd_name = self.single_ccd_name[0][0]
+                if self.single_ccd_mode is True and ccd != ccd_name:
                     continue
                 test_list.extend(t[ccd])
 
         self.testq_timer += time.time() - in_time
+
+        if self.single_ccd_mode:
+            if len(test_list) != 16:
+                print("CCD mode - error in length of test quantity list: ", len(test_list))
+                raise ValueError
+        elif len(test_list) != 144:
+            print("Raft mode - error in length of test quantity list: ", len(test_list))
+            raise ValueError
 
         return test_list
 
@@ -480,7 +493,7 @@ class renderFocalPlane():
         if self.emulate is True:
             _, self.single_raft_run = self.get_emulated_raft_info(self.single_raft_name[0][0])
         else:
-            self.single_raft_run = self.get_current_run
+            self.single_raft_run = self.get_current_run()
 
         if self.single_raft_mode is True:
             raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
@@ -569,7 +582,6 @@ class renderFocalPlane():
 
         if new_mode == "Full Focal Plane":
             self.full_FP_mode = True
-            self.emulate = True  # no real run data yet!
             self.button.label = "Emulate Mode"
             self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
                                       row(self.button, self.button_file))
@@ -579,7 +591,6 @@ class renderFocalPlane():
 
         elif new_mode == "FP single raft":
             try:
-                self.emulate = True  # no real run data yet!
                 self.button.label = "Emulate Mode"
                 self.single_raft_mode = True
                 raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_raft_list]
@@ -596,7 +607,6 @@ class renderFocalPlane():
 
         elif new_mode == "FP single CCD":
             try:
-                self.emulate = True  # no real run data yet!
                 self.button.label = "Emulate Mode"
                 self.single_ccd_mode = True
                 # if self.single_raft_name == []:

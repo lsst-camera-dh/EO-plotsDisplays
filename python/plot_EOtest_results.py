@@ -58,9 +58,6 @@ class plot_EOtest_results():
             p =figure(tools=TOOLS, title=plt_title, x_axis_label='amp',
                        y_axis_label=test_name, height=200)
 
-            y_max = 1.2*max(np.max(np.array(test_list)), self.requirements[test_name])
-            p.y_range = Range1d(0., y_max)
-
             # add a line renderer with legend and line thickness
             #sensor_lines = [sensor_start, sensor_end, sensor_third]
             sensor_lines = []
@@ -69,10 +66,18 @@ class plot_EOtest_results():
                                       dimension='height', line_color='grey',
                                       line_dash='dashed', line_width=3))
 
-            # add the requirement line
-            sensor_lines.append(Span(location=self.requirements[test_name],
-                                     dimension='width', line_color='red',
-                                     line_dash='dashed', line_width=3))
+            # add the requirement line, if there is one for this test
+            try:
+                req = self.requirements[test_name]
+                sensor_lines.append(Span(location=self.requirements[test_name],
+                                         dimension='width', line_color='red',
+                                         line_dash='dashed', line_width=3))
+                y_max = 1.2 * max(np.max(np.array(test_list)), self.requirements[test_name])
+                p.y_range = Range1d(0., y_max)
+            except KeyError:
+                y_max = 1.2 * np.max(np.array(test_list))
+                p.y_range = Range1d(0., y_max)
+                pass
 
             p.circle('x', 'test', source=source, line_width=2)
             for sensor_line in sensor_lines:

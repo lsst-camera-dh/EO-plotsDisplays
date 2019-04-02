@@ -68,6 +68,7 @@ class renderFocalPlane():
         self.EO_type = "I&T-Raft"
         self.current_mode = 0
         self.current_raft_list = []
+        self.current_FP_raft_list = []
 
         self.user_hook = None
         self.tap_cb = self.tap_input
@@ -182,6 +183,7 @@ class renderFocalPlane():
                           ('Dark Current 95CL', 'dark_current_95CL'),
                           ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
                           ('Nonlinearity', 'max_frac_dev')]
+        self.menu_test.append(("User supplied", "User"))
 
         # drop down menu of test names, taking the menu from self.menu_test
         self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test)
@@ -235,12 +237,12 @@ class renderFocalPlane():
                              -1., -1., -1.
                              ]
 
-        self.amp_center_y = [-self.ccd_width / 2. - self.amp_width / 2. + (j + 1) / 8. for j in range(8)]
-        self.amp_center_y.extend(
+        self.amp_center_x = [-self.ccd_width / 2. - self.amp_width / 2. + (j + 1) / 8. for j in range(8)]
+        self.amp_center_x.extend(
             [-self.ccd_width / 2. - self.amp_width / 2. + (j + 1) / 8. for j in range(8)])
 
-        self.amp_center_x = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
-        self.amp_center_x.extend([-0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
+        self.amp_center_y = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
+        self.amp_center_y.extend([-0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
 
         if server == 'Prod':
             pS = True
@@ -291,7 +293,7 @@ class renderFocalPlane():
 
         # user override for "User"
         if self.user_hook is not None and testq == "User":
-            return self.user_hook(run=run)
+            return self.user_hook(run=run, mode=self.single_ccd_mode, slot=raft_slot)
 
         if run not in self.test_cache or self.current_raft not in self.test_cache[run]:
             # use get_EO to fetch the test quantities from the eT results database
@@ -352,6 +354,7 @@ class renderFocalPlane():
         if self.emulate is False:
             if self.full_FP_mode is True:
                 raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
+                self.current_FP_raft_list = raft_list
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
                 run = self.current_run
@@ -565,7 +568,7 @@ class renderFocalPlane():
     def update_dropdown_raft(self, sattr, old, new):
         # Update from raft_list for now - need to add case where we have all rafts.
         raft_name = self.drop_raft.value
-        raft_slot_mapping = {pair[0]: pair[1] for pair in self.current_raft_list}
+        raft_slot_mapping = {pair[0]: pair[1] for pair in self.current_FP_raft_list}
         raft_slot = raft_slot_mapping[raft_name]
         self.drop_raft.menu = []
         self.single_raft_name = [[raft_name, raft_slot]]
@@ -914,8 +917,8 @@ class renderFocalPlane():
                                 width=self.ccd_width/2.,
                                 color="black",
                                 fill_alpha=0.7, fill_color="black",view=view, line_width = 0.5)
-        self.heatmap.rect(x='x', y='y', source=self.source, height=self.amp_width,
-                              width=self.ccd_width/2.,
+        self.heatmap.rect(x='x', y='y', source=self.source, width=self.amp_width,
+                              height=self.ccd_width/2.,
                               color="black",
                               fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper}, line_width = 0.5)
         if box is not None:

@@ -1,4 +1,4 @@
-def hook(run):
+def hook(run=None, mode=None, slot=None):
     """
     User hook for test quantity
     :param run: run number

@@ -244,6 +244,28 @@ class renderFocalPlane():
         self.amp_center_y = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
         self.amp_center_y.extend([-0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
 
+        """
+        Layout of raft, CCDs, amps:
+        
+        Rafts:
+                                    "C0","R41", "R42", "R43","C1"
+                                    "R30", "R31", "R32", "R33", "R34",
+                                    "R20", "R21", "R22", "R23", "R24",
+                                    "R10", "R11", "R12", "R13", "R14"
+                                    "C2","R01", "R02", "R03","C4"
+        
+        CCDs                                
+                                    'S20','S21','S22'  
+                                    'S10','S11','S12'
+                                    'S00','S01','S02'
+                                         
+                                    
+        amps:
+                                    lower: amps 1-8 (left to right)
+                                    upper: amps 16-9   
+                                    aspect ratio is that amps long side is vertical
+        """
+
         if server == 'Prod':
             pS = True
         else:
@@ -307,10 +329,13 @@ class renderFocalPlane():
                 c[raft_list] = res
 
         test_list = []
+        ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
+
 
         # fetch the test from the cache
 
         if self.EO_type == "I&T-BOT":
+            test_list = [-1.]*144
             try:
                 t = self.test_cache[run][testq][raft_slot]
             except KeyError:
@@ -318,7 +343,9 @@ class renderFocalPlane():
             for ccd in t:
                 if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
                     continue
-                test_list.extend(t[ccd])
+                list_idx = 16 * ccd_idx[ccd]
+                for i in range(16):
+                    test_list[list_idx+i] = t[ccd][i]
 
         else:
             try:
@@ -727,11 +754,11 @@ class renderFocalPlane():
         color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(), label_standoff=12,
                              border_line_color=None, location=(0, 0))
 
-        fig_title = "Focal Plane"
+        fig_title = "Focal Plane" + " Run: " + self.current_run
         if self.single_raft_mode is True or self.solo_raft_mode is True:
-            fig_title = self.single_raft_name[0][0]
+            fig_title = self.single_raft_name[0][0] + " Run: " + self.current_run
         elif self.single_ccd_mode is True:
-            fig_title = self.single_ccd_name[0][0]
+            fig_title = self.single_ccd_name[0][0] + " Run: " + self.current_run
 
         self.heatmap = figure(
             title=fig_title, tools=TOOLS, toolbar_location="below",

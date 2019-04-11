@@ -336,6 +336,8 @@ class renderFocalPlane():
 
         if self.EO_type == "I&T-BOT":
             test_list = [-1.]*144
+            if self.single_ccd_mode:
+                test_list = [-1.] * 16
             try:
                 t = self.test_cache[run][testq][raft_slot]
             except KeyError:

@@ -6,7 +6,7 @@ from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
 from eTraveler.clientAPI.connection import Connection
 
-from bokeh.models import LinearAxis, Grid, LogColorMapper, ColorBar, \
+from bokeh.models import LinearAxis, Grid, ContinuousColorMapper, LinearColorMapper, ColorBar, \
     LogTicker
 from bokeh.plotting import figure
 from bokeh.palettes import Viridis6 as palette
@@ -246,23 +246,23 @@ class renderFocalPlane():
 
         """
         Layout of raft, CCDs, amps:
-        
+
         Rafts:
                                     "C0","R41", "R42", "R43","C1"
                                     "R30", "R31", "R32", "R33", "R34",
                                     "R20", "R21", "R22", "R23", "R24",
                                     "R10", "R11", "R12", "R13", "R14"
                                     "C2","R01", "R02", "R03","C4"
-        
-        CCDs                                
-                                    'S20','S21','S22'  
+
+        CCDs
+                                    'S20','S21','S22'
                                     'S10','S11','S12'
                                     'S00','S01','S02'
-                                         
-                                    
+
+
         amps:
                                     lower: amps 1-8 (left to right)
-                                    upper: amps 16-9   
+                                    upper: amps 16-9
                                     aspect ratio is that amps long side is vertical
         """
 
@@ -302,7 +302,7 @@ class renderFocalPlane():
 
     def get_testq(self, run=None, testq=None, raft_slot=None):
         """
-        Get the per radt or ccd test quantity array for this run and test name.
+        Get the per raft or ccd test quantity array for this run and test name.
         :param run:  run number
         :param testq: test quantity name
         :return: list of test quantities - 144 long for raft; 16 for ccd
@@ -752,8 +752,10 @@ class renderFocalPlane():
 
         # set up the bokeh heatmap figure
         TOOLS = "pan, wheel_zoom, box_zoom, reset, save, box_select, lasso_select, tap"
-        color_mapper = LogColorMapper(palette=palette)
-        color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(), label_standoff=12,
+        # this could be updated to better choices for the values, but for now
+        # low/high are arbitrary to ensure tick marks are plotted
+        color_mapper = LinearColorMapper(palette=palette,low=0,high=1e5)
+        color_bar = ColorBar(color_mapper=color_mapper, label_standoff=12,
                              border_line_color=None, location=(0, 0))
 
         fig_title = "Focal Plane" + " Run: " + self.current_run
@@ -938,7 +940,7 @@ class renderFocalPlane():
         self.source.on_change('selected', self.tap_cb)
         self.histsource.on_change('selected', self.select_cb)
 
-        cm = self.heatmap.select_one(LogColorMapper)
+        cm = self.heatmap.select_one(LinearColorMapper)
         cm.update(low=min(test_q), high=max(test_q))
 
         if self.full_FP_mode is True and view is not None:

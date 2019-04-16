@@ -88,8 +88,7 @@ class plot_EOtest_results():
             raft_plots.append(p)
 
         plot_layout = column(raft_plots)
-
-        export_png(plot_layout, self.output_spec)
+        export_png(plot_layout, filename=self.output_spec)
 
 
 if __name__ == "__main__":
@@ -103,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--test_name', default=None, help="(test name (default=%(default)s)")
     parser.add_argument('-d', '--db', default='Prod', help="database to use (default=%(default)s)")
     parser.add_argument('-e', '--eTserver', default='Dev', help="eTraveler server (default=%(default)s)")
-    parser.add_argument('-o', '--output', default='/Users/richard/LSST/Data/bokeh/',
+    parser.add_argument('-o', '--output', default='EO-plot.png',
                         help="output base directory (default=%(default)s)")
     parser.add_argument('-s', '--site_type', default='I&T-BOT', help="type & site of test (default=%("
                                                                       "default)s)")

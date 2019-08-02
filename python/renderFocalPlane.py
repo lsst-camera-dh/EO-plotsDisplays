@@ -73,6 +73,9 @@ class renderFocalPlane():
         self.user_hook = None
         self.tap_cb = self.tap_input
         self.select_cb = self.select_input
+        self.source.on_change('selected', self.tap_cb)
+        self.histsource.on_change('selected', self.select_cb)
+
 
         # set up run number text box - disable it in emulate mode
         self.text_input = TextInput(value=str(self.get_current_run()), title="Select Run")
@@ -117,8 +120,8 @@ class renderFocalPlane():
         self.button = Button(label="Emulate Mode", button_type="success")
         self.button_file = Button(label="Upload Emulation Config", button_type="success")
 
-        # readining in the emulation config file depends on two callbacks - one triggering reading the file into the
-        # ColumnDataSource, coupled with looking for a change on the ColumnDataSource
+        # readining in the emulation config file depends on two callbacks - one triggering reading the
+        # file into the ColumnDataSource, coupled with looking for a change on the ColumnDataSource
         self.file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
 
         self.button_file.callback = CustomJS(args=dict(file_source=self.file_source), code="""
@@ -300,7 +303,7 @@ class renderFocalPlane():
 
         self.dbsel = "Prod"
 
-    def get_testq(self, run=None, testq=None, raft_slot=None):
+    def get_testq(self, raft_slot=None):
         """
         Get the per raft or ccd test quantity array for this run and test name.
         :param run:  run number
@@ -309,39 +312,40 @@ class renderFocalPlane():
         """
 
         in_time = time.time()
-        # in emulation mode, take the run number from the single raft run, rather than Focal Plane
-        if self.emulate is True and (self.single_raft_mode is True or self.single_ccd_mode is True):
-            run = self.single_raft_run
+
+        BOT = self.full_FP_mode and not self.emulate
 
         # user override for "User"
-        if self.user_hook is not None and testq == "User":
-            return self.user_hook(run=run, mode=self.single_ccd_mode, slot=raft_slot)
+        if self.user_hook is not None and self.current_test == "User":
+            return self.user_hook(run=self.current_run, mode=self.single_ccd_mode, slot=raft_slot)
 
-        if run not in self.test_cache or self.current_raft not in self.test_cache[run]:
+        if self.current_run not in self.test_cache or self.current_raft not in \
+                self.test_cache[self.current_run]:
             # use get_EO to fetch the test quantities from the eT results database
             raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
-                                                                               run=run)
+                                                                               run=self.current_run)
             res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
-            if self.EO_type == "I&T-BOT":
-                self.test_cache[run] = res
+            if BOT:
+                self.test_cache[self.current_run] = res
             else:
-                c = self.test_cache.setdefault(run, {})
+                c = self.test_cache.setdefault(self.current_run, {})
                 c[raft_list] = res
 
         test_list = []
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
 
-
         # fetch the test from the cache
 
-        if self.EO_type == "I&T-BOT":
+#        if self.EO_type == "I&T-BOT":
+        if BOT:
             test_list = [-1.]*144
             if self.single_ccd_mode:
                 test_list = [-1.] * 16
             try:
-                t = self.test_cache[run][testq][raft_slot]
+                t = self.test_cache[self.current_run][self.current_test][raft_slot]
             except KeyError:
-                raise KeyError(testq + ": not available. Reverting to previous - " + self.previous_test)
+                raise KeyError(self.current_test + ": not available. Reverting to previous - " +
+                               self.previous_test)
             for ccd in t:
                 if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
                     continue
@@ -351,15 +355,15 @@ class renderFocalPlane():
 
         else:
             try:
-                t = self.test_cache[run][self.current_raft][testq]
+                t = self.test_cache[self.current_run][self.current_raft][self.current_test]
             except KeyError:
-                raise KeyError(testq + ": not available. Reverting to previous - " + self.previous_test)
+                raise KeyError(self.current_test + ": not available. Reverting to previous - " +
+                               self.previous_test)
 
             ccd_name = ""
             for ccd in t:
                 # if in single CCD mode, only return that one's quantities
-                ccd_name = self.single_ccd_name[0][0]
-                if self.single_ccd_mode is True and ccd != ccd_name:
+                if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
                     continue
                 test_list.extend(t[ccd])
 
@@ -390,7 +394,7 @@ class renderFocalPlane():
                 run_info = self.connections["connect"][self.dbsel].getRunResults(run=run)
                 raft_list = [[run_info['experimentSN'], "R22"]]
                 self.single_raft_name = raft_list
-            # raft or CCD is on the focal plane
+            # raft or CCD is on the focal plane; name set by tap_input selection
             elif self.single_raft_mode is True or self.single_ccd_mode is True:
                 raft_list = self.single_raft_name
         else:
@@ -420,7 +424,7 @@ class renderFocalPlane():
         self.current_raft_list = raft_list
         return raft_list
 
-    def set_emulation(self, raft_list, run_list):
+    def set_emulation(self, config_spec=None):
         """
         accept the emulation comfiguratin and set emulate to True
         :param raft_list: list of raft info - [raft name, slot]
@@ -428,6 +432,8 @@ class renderFocalPlane():
         :return: nothing
         """
         self.emulate = True
+
+        raft_list, run_list = self.parse_emulation_config(file_spec=config_spec)
 
         self.emulate_raft_list = raft_list
         self.emulate_run_list = run_list
@@ -525,8 +531,10 @@ class renderFocalPlane():
         ccd_slot = self.source.data['ccd_slot'][new['1d']['indices'][0]]
 
         self.single_raft_name = [[raft_name, raft_slot]]
+        self.current_raft = raft_name
         if self.emulate is True:
             _, self.single_raft_run = self.get_emulated_raft_info(self.single_raft_name[0][0])
+            self.current_run = self.single_raft_run
         else:
             self.single_raft_run = self.get_current_run()
 
@@ -534,7 +542,7 @@ class renderFocalPlane():
             raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
             self.interactors = layout(row(self.text_input, self.drop_test, self.drop_raft, self.drop_modes),
                                       row(self.button, self.button_file))
-            l_new = self.render(run=self.single_raft_run, testq=self.get_current_test())
+            l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
@@ -548,7 +556,7 @@ class renderFocalPlane():
             self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
             self.interactors = layout(row(self.text_input, self.drop_test, self.drop_ccd, self.drop_modes),
                                       row(self.button, self.button_file))
-            l_new = self.render(run=self.single_raft_run, testq=self.get_current_test())
+            l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
@@ -572,14 +580,16 @@ class renderFocalPlane():
             max = self.histsource.data['right'][new['1d']['indices'][-1]]
             booleans = [True if val >= min and val <= max else False for val in self.source.data['test_q']]
             view = CDSView(source=self.source, filters=[BooleanFilter(booleans)])
-            l_new = self.render(run=self.get_current_run(), testq=self.get_current_test(), view=view)
+            l_new = self.render(view=view)
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
     def update_dropdown_test(self, sattr, old, new):
         new_test = self.drop_test.value
 
-        l_new = self.render(run=self.get_current_run(), testq=new_test)
+        self.previous_test = self.current_test
+        self.current_test = new_test
+        l_new = self.render()
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
@@ -590,7 +600,7 @@ class renderFocalPlane():
         self.drop_ccd.menu = []
         self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_ccd,
                                       self.drop_modes), row(self.button, self.button_file))
-        l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+        l_new = self.render()
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
@@ -601,9 +611,10 @@ class renderFocalPlane():
         raft_slot = raft_slot_mapping[raft_name]
         self.drop_raft.menu = []
         self.single_raft_name = [[raft_name, raft_slot]]
+        self.current_raft = raft_name
         self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_raft,
                                       self.drop_modes), row(self.button, self.button_file))
-        l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+        l_new = self.render()
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
@@ -620,7 +631,7 @@ class renderFocalPlane():
             self.button.label = "Emulate Mode"
             self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
                                       row(self.button, self.button_file))
-            l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+            l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
@@ -634,10 +645,10 @@ class renderFocalPlane():
                 self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
                                               self.drop_raft, self.drop_modes), row(self.button,
                                                                                     self.button_file))
-                l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+                l_new = self.render()
                 m_new = layout(self.interactors, l_new)
                 self.layout.children = m_new.children
-            except IndexError:
+            except Exception:
                 print('Click on a raft in the heat map.')
 
         elif new_mode == "FP single CCD":
@@ -656,7 +667,7 @@ class renderFocalPlane():
                 self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
                                               self.drop_ccd, self.drop_modes), row(self.button,
                                                                                    self.button_file))
-                l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+                l_new = self.render()
                 m_new = layout(self.interactors, l_new)
                 self.layout.children = m_new.children
             except IndexError:
@@ -678,7 +689,7 @@ class renderFocalPlane():
 
             self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
                                           self.drop_modes))
-            l_new = self.render(run=self.get_current_run(), testq=self.get_current_test())
+            l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
@@ -689,7 +700,8 @@ class renderFocalPlane():
             self.text_input.title = "Select Run"
             new_run = self.text_input.value
 
-            l_new_run = self.render(run=new_run, testq=self.get_current_test())
+            self.current_run = new_run
+            l_new_run = self.render()
             m_new_run = layout(self.interactors, l_new_run)
             self.layout.children = m_new_run.children
         else:
@@ -702,7 +714,7 @@ class renderFocalPlane():
         self.emulate_raft_list = new_mode
         if new_mode is True:
             self.button.label = "Emulate Mode"
-            l_new_run = self.render(run=self.get_current_run(), testq=self.get_current_test())
+            l_new_run = self.render()
             m_new_run = layout(self.interactors, l_new_run)
             self.layout.children = m_new_run.children
 
@@ -714,13 +726,13 @@ class renderFocalPlane():
 
         raft_list, run_list = self.parse_emulation_config(filename)
 
-        self.set_emulation(raft_list, run_list)
+        self.set_emulation(config_spec=filename)
 
-        l_new_run = self.render(run=self.current_run, testq=self.get_current_test())
+        l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children
 
-    def render(self, run=None, testq=None, view=None, box=None):
+    def render(self, view=None, box=None):
 
         """
         Do the work to make the desired display
@@ -732,22 +744,6 @@ class renderFocalPlane():
         self.testq_timer = 0
         enter_time = time.time()
 
-        self.current_run = run
-        self.current_test = testq
-
-        self.dbsel = "Prod"
-        if 'D' in self.current_run:
-            self.dbsel = "Dev"
-
-        # figure out if this is BNL or I&T data from the run summary in eT
-        run_sum = self.connections["connect"][self.dbsel].getRunSummary(run=run)
-        if "CRYO" in run_sum["travelerName"]:
-            self.EO_type = "I&T-BOT"
-        elif "Integration" in run_sum["subsystem"]:
-            self.EO_type = "I&T-Raft"
-        else:
-            self.EO_type = "BNL-Raft"
-
         raft_list = self.get_raft_content()
 
         # set up the bokeh heatmap figure
@@ -758,7 +754,12 @@ class renderFocalPlane():
         color_bar = ColorBar(color_mapper=color_mapper, label_standoff=12,
                              border_line_color=None, location=(0, 0))
 
-        fig_title = "Focal Plane" + " Run: " + self.current_run
+        fig_title_base = "Focal Plane" + " Run: "
+        if self.emulate:
+            fig_title =  fig_title_base + "Emulation Mode"
+        else:
+            fig_title = fig_title_base + self.current_run
+
         if self.single_raft_mode is True or self.solo_raft_mode is True:
             fig_title = self.single_raft_name[0][0] + " Run: " + self.current_run
         elif self.single_ccd_mode is True:
@@ -769,7 +770,7 @@ class renderFocalPlane():
             tooltips=[
                 ("Raft", "@raft_name"), ("Raft slot", "@raft_slot"), ("CCD slot", "@ccd_slot"),
                 ("CCD name", "@ccd_name"), ("Amp", "@amp_number"),
-                (testq, "@test_q")
+                (self.current_test, "@test_q")
             ],
             x_axis_location=None, y_axis_location=None, )
         self.heatmap.grid.grid_line_color = None
@@ -780,10 +781,6 @@ class renderFocalPlane():
             self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1, view=view)
         elif self.full_FP_mode is True:
             self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1)
-
-        # if self.single_ccd_mode is True:
-        #    view = CDSView(source=self.source, filters=[GroupFilter(column_name='species', group=self.single_ccd_name)])
-        #    self.heatmap.rect(x=[0], y=[0], width=15., height=15., color="red", fill_alpha=0.1,view=view)
 
         x = []
         y = []
@@ -857,20 +854,20 @@ class renderFocalPlane():
 
             # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
             self.dbsel = "Prod"
-            if 'D' in run:
+            if 'D' in self.current_run:
                 self.dbsel = "Dev"
 
             try:
-                run_data = self.get_testq(run=self.current_run, testq=testq, raft_slot=raft_slot_current)
+                run_data = self.get_testq()
             except KeyError:
-                run_data = self.get_testq(run=self.current_run, testq=self.previous_test)
+                self.current_test = self.previous_test
+                run_data = self.get_testq()
 
             run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
             run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
             run_data = [val for sublist in run_data for val in sublist]
 
             test_q.extend(run_data)
-            #            test_q.extend(self.get_testq(run=run_q, testq=testq))
 
             num_ccd = 9
             if self.single_ccd_mode is False:
@@ -914,7 +911,6 @@ class renderFocalPlane():
                     ccd_slot.append(ccd_list[ccd][1])
                     amp_number.append(self.amp_ordering[amp]+1)
 
-
         ready_data_time = time.time() - enter_time
 
         self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
@@ -934,11 +930,11 @@ class renderFocalPlane():
         h_q, bins = np.histogram(np.array(test_q), bins=50)
         self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q, left=bins[:-1], right=bins[1:])))
         # Using numpy to get the index of the bins to which the value is assigned
-        h = figure(title=testq, tools=TOOLS, toolbar_location="below")
+        h = figure(title=self.current_test, tools=TOOLS, toolbar_location="below")
         h.quad(source=self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue',
                fill_alpha=0.2)
-        self.source.on_change('selected', self.tap_cb)
-        self.histsource.on_change('selected', self.select_cb)
+        #self.source.on_change('selected', self.tap_cb)
+        #self.histsource.on_change('selected', self.select_cb)
 
         cm = self.heatmap.select_one(LinearColorMapper)
         cm.update(low=min(test_q), high=max(test_q))
@@ -949,9 +945,10 @@ class renderFocalPlane():
                                 color="black",
                                 fill_alpha=0.7, fill_color="black",view=view, line_width = 0.5)
         self.heatmap.rect(x='x', y='y', source=self.source, width=self.amp_width,
-                              height=self.ccd_width/2.,
-                              color="black",
-                              fill_alpha=0.7, fill_color={ 'field': 'test_q', 'transform': color_mapper}, line_width = 0.5)
+                          height=self.ccd_width / 2.,
+                          color="black",
+                          fill_alpha=0.7, fill_color={'field': 'test_q', 'transform': color_mapper},
+                          line_width=0.5)
         if box is not None:
             h.add_layout(box)
         xaxis = LinearAxis()

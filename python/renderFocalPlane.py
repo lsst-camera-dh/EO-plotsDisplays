@@ -561,6 +561,7 @@ class renderFocalPlane():
             raftContents = self.connections["eR"][self.dbsel].raftContents(
                 raftName=self.single_raft_name[0][0])
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
+            self.drop_ccd.menu = ccd_menu
 
             self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
             self.interactors = layout(row(self.text_input, self.drop_test, self.drop_ccd, self.drop_modes),
@@ -606,7 +607,6 @@ class renderFocalPlane():
         ccd_name = self.drop_ccd.value
         ccd_slot = self.slot_mapping[ccd_name]
         self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
-        self.drop_ccd.menu = []
         self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_ccd,
                                       self.drop_modes), row(self.button, self.button_file))
         l_new = self.render()
@@ -635,9 +635,13 @@ class renderFocalPlane():
         self.solo_raft_mode = False
         self.full_FP_mode = False
 
+        if self.emulate:
+            self.button.label = "Emulate Mode"
+        else:
+            self.button.label = "Run Mode"
+
         if new_mode == "Full Focal Plane":
             self.full_FP_mode = True
-            self.button.label = "Emulate Mode"
             self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
                                       row(self.button, self.button_file))
             l_new = self.render()
@@ -646,9 +650,8 @@ class renderFocalPlane():
 
         elif new_mode == "FP single raft":
             try:
-                self.button.label = "Emulate Mode"
                 self.single_raft_mode = True
-                raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_raft_list]
+                raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_FP_raft_list]
                 self.drop_raft.label = "Select Raft"
                 self.drop_raft.menu = raft_menu
                 self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
@@ -662,7 +665,6 @@ class renderFocalPlane():
 
         elif new_mode == "FP single CCD":
             try:
-                self.button.label = "Emulate Mode"
                 self.single_ccd_mode = True
                 # if self.single_raft_name == []:
                 #    self.single_raft_name = [raft_list[1]]

@@ -400,6 +400,7 @@ class renderFocalPlane():
         else:
             # use the supplied list of raft info
             raft_list = self.emulate_raft_list
+            self.current_FP_raft_list = raft_list
             # use one of the rafts/ccd on the emulated focal plane
             if self.single_raft_mode is True or self.single_ccd_mode is True:
                 raft_list = self.single_raft_name
@@ -617,7 +618,7 @@ class renderFocalPlane():
         raft_name = self.drop_raft.value
         raft_slot_mapping = {pair[0]: pair[1] for pair in self.current_FP_raft_list}
         raft_slot = raft_slot_mapping[raft_name]
-        self.drop_raft.menu = []
+        #self.drop_raft.menu = []
         self.single_raft_name = [[raft_name, raft_slot]]
         self.current_raft = raft_name
         self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_raft,

@@ -73,8 +73,8 @@ class renderFocalPlane():
         self.user_hook = None
         self.tap_cb = self.tap_input
         self.select_cb = self.select_input
-        self.source.on_change('selected', self.tap_cb)
-        self.histsource.on_change('selected', self.select_cb)
+        #self.source.on_change('selected', self.tap_cb)
+        #self.histsource.on_change('selected', self.select_cb)
 
 
         # set up run number text box - disable it in emulate mode
@@ -417,7 +417,8 @@ class renderFocalPlane():
                     self.installed_raft_names[i] = raft_list[raft][0]
                     self.installed_raft_slots[i] = raft_list[raft][1]
                     if self.emulate is True:
-                        self.emulated_runs[i] = self.emulate_run_list[raft]
+                        self.emulated_runs[i] = self.emulate_run_list[
+                            self.emulate_raft_list.index(raft_list[raft])]
                     #                    self.emulate_raft_list = raft_list
                     break
 
@@ -523,12 +524,19 @@ class renderFocalPlane():
         :param old: previous value of self.source
         :param new: new value of self.source
         :return: nothing
-        """
+
         # The index of the selected glyph is : new['1d']['indices'][0]
         raft_name = self.source.data['raft_name'][new['1d']['indices'][0]]
         raft_slot = self.source.data['raft_slot'][new['1d']['indices'][0]]
         ccd_name = self.source.data['ccd_name'][new['1d']['indices'][0]]
         ccd_slot = self.source.data['ccd_slot'][new['1d']['indices'][0]]
+        """
+
+        selected_row = new[0]
+        raft_name = self.source.data['raft_name'][selected_row]
+        raft_slot = self.source.data['raft_slot'][selected_row]
+        ccd_name = self.source.data['ccd_name'][selected_row]
+        ccd_slot = self.source.data['ccd_slot'][selected_row]
 
         self.single_raft_name = [[raft_name, raft_slot]]
         self.current_raft = raft_name
@@ -933,8 +941,8 @@ class renderFocalPlane():
         h = figure(title=self.current_test, tools=TOOLS, toolbar_location="below")
         h.quad(source=self.histsource, top='top', bottom=0, left='left', right='right', fill_color='blue',
                fill_alpha=0.2)
-        #self.source.on_change('selected', self.tap_cb)
-        #self.histsource.on_change('selected', self.select_cb)
+        self.source.selected.on_change('indices', self.tap_cb)
+        self.histsource.on_change('selected', self.select_cb)
 
         cm = self.heatmap.select_one(LinearColorMapper)
         cm.update(low=min(test_q), high=max(test_q))

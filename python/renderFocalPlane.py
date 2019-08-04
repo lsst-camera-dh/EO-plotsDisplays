@@ -384,6 +384,12 @@ class renderFocalPlane():
         Figure out what rafts we need - be it in the full Focal Plane or single rafts
         :return: raft_list -  list of lists - [raft names, Focal plane slot]
         """
+
+        # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
+        self.dbsel = "Prod"
+        if 'D' in self.current_run:
+            self.dbsel = "Dev"
+
         if self.emulate is False:
             if self.full_FP_mode is True:
                 raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
@@ -719,18 +725,20 @@ class renderFocalPlane():
             self.text_input.title = "Select Run Disabled"
 
     def update_button(self):
-        current_mode = self.emulate_raft_list
+        current_mode = self.emulate
         new_mode = not current_mode
 
-        self.emulate_raft_list = new_mode
+        self.emulate = new_mode
         if new_mode is True:
             self.button.label = "Emulate Mode"
+            self.text_input.title = "Select Run"
             l_new_run = self.render()
             m_new_run = layout(self.interactors, l_new_run)
             self.layout.children = m_new_run.children
 
         else:
             self.button.label = 'Run Mode'
+            self.text_input.title = "Select Run Disabled"
 
     def file_callback(self, attr, old, new):
         filename = self.file_source.data['file_name'][0]
@@ -869,10 +877,10 @@ class renderFocalPlane():
                 self.dbsel = "Dev"
 
             try:
-                run_data = self.get_testq()
+                run_data = self.get_testq(raft_slot=raft_slot_current)
             except KeyError:
                 self.current_test = self.previous_test
-                run_data = self.get_testq()
+                run_data = self.get_testq(raft_slot=raft_slot_current)
 
             run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
             run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]

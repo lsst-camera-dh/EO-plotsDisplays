@@ -313,7 +313,7 @@ class renderFocalPlane():
 
         in_time = time.time()
 
-        BOT = self.full_FP_mode and not self.emulate
+        BOT = not self.solo_raft_mode and not self.emulate
 
         # user override for "User"
         if self.user_hook is not None and self.current_test == "User":
@@ -387,7 +387,7 @@ class renderFocalPlane():
 
         # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
         self.dbsel = "Prod"
-        if 'D' in self.current_run:
+        if isinstance(self.current_run,str) and 'D' in self.current_run:
             self.dbsel = "Dev"
 
         if self.emulate is False:
@@ -565,7 +565,7 @@ class renderFocalPlane():
             self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
 
             raftContents = self.connections["eR"][self.dbsel].raftContents(
-                raftName=self.single_raft_name[0][0])
+                raftName=self.single_raft_name[0][0], run=self.current_run)
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
             self.drop_ccd.menu = ccd_menu
 
@@ -675,7 +675,7 @@ class renderFocalPlane():
                 # if self.single_raft_name == []:
                 #    self.single_raft_name = [raft_list[1]]
                 raftContents = self.connections["eR"][self.dbsel].raftContents(
-                    raftName=self.single_raft_name[0][0])
+                    raftName=self.single_raft_name[0][0], run=self.current_run)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
                 print(ccd_menu)
                 self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
@@ -705,7 +705,7 @@ class renderFocalPlane():
             self.text_input.title = "Select Run"
 
             self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
-                                          self.drop_modes))
+                                          self.drop_modes), row(self.button, self.button_file))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -873,7 +873,7 @@ class renderFocalPlane():
 
             # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
             self.dbsel = "Prod"
-            if 'D' in self.current_run:
+            if isinstance(self.current_run,str) and 'D' in self.current_run:
                 self.dbsel = "Dev"
 
             try:

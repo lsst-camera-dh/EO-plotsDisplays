@@ -303,6 +303,12 @@ class renderFocalPlane():
 
         self.dbsel = "Prod"
 
+    def set_db(self, run=None):
+        # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
+        self.dbsel = "Prod"
+        if isinstance(run,str) and 'D' in run:
+            self.dbsel = "Dev"
+
     def get_testq(self, raft_slot=None):
         """
         Get the per raft or ccd test quantity array for this run and test name.
@@ -386,9 +392,7 @@ class renderFocalPlane():
         """
 
         # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
-        self.dbsel = "Prod"
-        if isinstance(self.current_run,str) and 'D' in self.current_run:
-            self.dbsel = "Dev"
+        self.set_db(run=self.current_run)
 
         if self.emulate is False:
             if self.full_FP_mode is True:
@@ -674,6 +678,7 @@ class renderFocalPlane():
                 self.single_ccd_mode = True
                 # if self.single_raft_name == []:
                 #    self.single_raft_name = [raft_list[1]]
+                self.set_db(run=self.current_run)
                 raftContents = self.connections["eR"][self.dbsel].raftContents(
                     raftName=self.single_raft_name[0][0], run=self.current_run)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
@@ -872,9 +877,7 @@ class renderFocalPlane():
                 self.current_run = self.emulated_runs[raft]
 
             # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
-            self.dbsel = "Prod"
-            if isinstance(self.current_run,str) and 'D' in self.current_run:
-                self.dbsel = "Dev"
+            self.set_db(run=self.current_run)
 
             try:
                 run_data = self.get_testq(raft_slot=raft_slot_current)

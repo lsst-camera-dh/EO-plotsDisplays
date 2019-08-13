@@ -568,8 +568,9 @@ class renderFocalPlane():
         if self.single_ccd_mode is True:
             self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
 
+            self.set_db(run=self.current_run)
             raftContents = self.connections["eR"][self.dbsel].raftContents(
-                raftName=self.single_raft_name[0][0], run=self.current_run)
+                raftName=raft_name, run=self.current_run)
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
             self.drop_ccd.menu = ccd_menu
 

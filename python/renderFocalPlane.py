@@ -320,22 +320,33 @@ class renderFocalPlane():
         in_time = time.time()
 
         BOT = not self.solo_raft_mode and not self.emulate
+        raft_index = raft_slot
+        if not BOT:
+            raft_index = self.current_raft
 
         # user override for "User"
         if self.user_hook is not None and self.current_test == "User":
             return self.user_hook(run=self.current_run, mode=self.single_ccd_mode, slot=raft_slot)
 
-        if self.current_run not in self.test_cache or self.current_raft not in \
-                self.test_cache[self.current_run]:
-            # use get_EO to fetch the test quantities from the eT results database
-            raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
-                                                                               run=self.current_run)
-            res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
-            if BOT:
+
+        if BOT:
+            if self.current_run not in self.test_cache or raft_index not in \
+                    self.test_cache[self.current_run][self.current_test]:
+                # use get_EO to fetch the test quantities from the eT results database
+                raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
+                                                                                   run=self.current_run)
+                res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
                 self.test_cache[self.current_run] = res
-            else:
+        else:
+            if self.current_run not in self.test_cache or raft_index not in \
+                    self.test_cache[self.current_run]:
+                # use get_EO to fetch the test quantities from the eT results database
+                raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
+                                                                                   run=self.current_run)
+                res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
                 c = self.test_cache.setdefault(self.current_run, {})
                 c[raft_list] = res
+
 
         test_list = []
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
@@ -356,6 +367,9 @@ class renderFocalPlane():
                 if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
                     continue
                 list_idx = 16 * ccd_idx[ccd]
+                if self.single_ccd_mode:
+                    list_idx = 0
+
                 for i in range(16):
                     test_list[list_idx+i] = t[ccd][i]
 
@@ -558,7 +572,8 @@ class renderFocalPlane():
             self.single_raft_run = self.get_current_run()
 
         if self.single_raft_mode is True:
-            raft_menu = [(pair[1], pair[0]) for pair in self.current_raft_list]
+            raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_FP_raft_list]
+            self.drop_raft.menu = raft_menu
             self.interactors = layout(row(self.text_input, self.drop_test, self.drop_raft, self.drop_modes),
                                       row(self.button, self.button_file))
             l_new = self.render()
@@ -580,10 +595,6 @@ class renderFocalPlane():
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
-
-            # l_new = self.render(run=self.single_raft_run, testq=self.get_current_test())
-            # m_new = layout(self.interactors, l_new)
-            # self.layout.children = m_new.children
 
     def select_input(self, attr, old, new):
         """

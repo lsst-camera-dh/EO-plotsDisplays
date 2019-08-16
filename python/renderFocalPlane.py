@@ -1,6 +1,7 @@
 from __future__ import print_function
 import numpy as np
 import pandas as pd
+import sys
 from get_EO_analysis_results import get_EO_analysis_results
 from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
@@ -120,6 +121,10 @@ class renderFocalPlane():
         self.button = Button(label="Emulate Mode", button_type="success")
         self.button_file = Button(label="Upload Emulation Config", button_type="success")
 
+        # button to terminate app
+        self.button_exit = Button(label="Exit", button_type="danger")
+        self.button_exit.on_click(self.do_exit)
+
         # readining in the emulation config file depends on two callbacks - one triggering reading the
         # file into the ColumnDataSource, coupled with looking for a change on the ColumnDataSource
         self.file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
@@ -192,7 +197,8 @@ class renderFocalPlane():
         self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test)
         self.drop_test.on_change('value', self.update_dropdown_test)
 
-        self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
+        self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input, self.drop_test,
+                                      self.drop_modes),
                                   row(self.button, self.button_file))
         self.layout = self.interactors
         self.map_layout = self.layout
@@ -466,10 +472,13 @@ class renderFocalPlane():
         self.current_raft_list = raft_list
 
         self.menu_test.append(("User Supplied", "User"))
+        self.text_input.title = "Select Run Disabled"
 
     def disable_emulation(self):
 
         self.emulate = False
+        self.text_input.title = "Select Run"
+
         # need way to turn off user hook and do this remove
         # self.menu_test.remove(("User Supplied", "User"))
 
@@ -574,7 +583,8 @@ class renderFocalPlane():
         if self.single_raft_mode is True:
             raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_FP_raft_list]
             self.drop_raft.menu = raft_menu
-            self.interactors = layout(row(self.text_input, self.drop_test, self.drop_raft, self.drop_modes),
+            self.interactors = layout(row(self.button_exit, self.text_input, self.drop_test, self.drop_raft,
+                                          self.drop_modes),
                                       row(self.button, self.button_file))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -590,7 +600,8 @@ class renderFocalPlane():
             self.drop_ccd.menu = ccd_menu
 
             self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
-            self.interactors = layout(row(self.text_input, self.drop_test, self.drop_ccd, self.drop_modes),
+            self.interactors = layout(row(self.button_exit, self.text_input, self.drop_test, self.drop_ccd,
+                                          self.drop_modes),
                                       row(self.button, self.button_file))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -629,7 +640,8 @@ class renderFocalPlane():
         ccd_name = self.drop_ccd.value
         ccd_slot = self.slot_mapping[ccd_name]
         self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
-        self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_ccd,
+        self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input, self.drop_test,
+                                      self.drop_ccd,
                                       self.drop_modes), row(self.button, self.button_file))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -643,7 +655,8 @@ class renderFocalPlane():
         #self.drop_raft.menu = []
         self.single_raft_name = [[raft_name, raft_slot]]
         self.current_raft = raft_name
-        self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_raft,
+        self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input, self.drop_test,
+                                      self.drop_raft,
                                       self.drop_modes), row(self.button, self.button_file))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -664,7 +677,8 @@ class renderFocalPlane():
 
         if new_mode == "Full Focal Plane":
             self.full_FP_mode = True
-            self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test, self.drop_modes),
+            self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input, self.drop_test,
+                                          self.drop_modes),
                                       row(self.button, self.button_file))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -676,7 +690,8 @@ class renderFocalPlane():
                 raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_FP_raft_list]
                 self.drop_raft.label = "Select Raft"
                 self.drop_raft.menu = raft_menu
-                self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
+                self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input,
+                                              self.drop_test,
                                               self.drop_raft, self.drop_modes), row(self.button,
                                                                                     self.button_file))
                 l_new = self.render()
@@ -698,7 +713,8 @@ class renderFocalPlane():
                 self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
                 self.drop_ccd.menu = ccd_menu
                 self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
-                self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
+                self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input,
+                                              self.drop_test,
                                               self.drop_ccd, self.drop_modes), row(self.button,
                                                                                    self.button_file))
                 l_new = self.render()
@@ -721,7 +737,7 @@ class renderFocalPlane():
             self.button.label = "Run Mode"
             self.text_input.title = "Select Run"
 
-            self.interactors = layout(row(self.drop_links, self.text_input, self.drop_test,
+            self.interactors = layout(row(self.button_exit, self.drop_links, self.text_input, self.drop_test,
                                           self.drop_modes), row(self.button, self.button_file))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -741,6 +757,10 @@ class renderFocalPlane():
         else:
             self.text_input.title = "Select Run Disabled"
 
+    def do_exit(self):
+        print("Shutting down app")
+        sys.exit(0)
+
     def update_button(self):
         current_mode = self.emulate
         new_mode = not current_mode
@@ -748,14 +768,14 @@ class renderFocalPlane():
         self.emulate = new_mode
         if new_mode is True:
             self.button.label = "Emulate Mode"
-            self.text_input.title = "Select Run"
+            self.text_input.title = "Select Run Disabled"
             l_new_run = self.render()
             m_new_run = layout(self.interactors, l_new_run)
             self.layout.children = m_new_run.children
 
         else:
             self.button.label = 'Run Mode'
-            self.text_input.title = "Select Run Disabled"
+            self.text_input.title = "Select Run"
 
     def file_callback(self, attr, old, new):
         filename = self.file_source.data['file_name'][0]

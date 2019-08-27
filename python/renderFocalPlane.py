@@ -49,6 +49,7 @@ class renderFocalPlane():
         self.single_ccd_mode = False
         self.solo_raft_mode = False
         self.full_FP_mode = True
+        self.solo_corner_raft = False
 
         # emulate mode provides a list of single raft runs to populate a fake focal plane
         self.emulate = False
@@ -213,9 +214,11 @@ class renderFocalPlane():
                                 "R10", "R11", "R12", "R13", "R14",
                                 "C2","R01", "R02", "R03","C4" ]
         self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
+        self.corner_raft_amp_ordering = [0,1,2,3,4,5,6,7]
         self.ccd_ordering = ['S00','S01','S02',
                             'S10','S11','S12',
                             'S20','S21','S22']
+        self.corner_raft_ccd_ordering = ['ccd1','ccd1','ccd2','ccd2','guider','guider']
 
         # booleans for whether a slot on the FP is occupied
         self.raft_is_there = [False] * 25
@@ -399,7 +402,9 @@ class renderFocalPlane():
             if len(test_list) != 16:
                 print("CCD mode - error in length of test quantity list: ", len(test_list))
                 raise ValueError
-        elif len(test_list) != 144:
+        elif len(test_list)==47:
+            self.solo_corner_raft = True
+        elif len(test_list) != 144 and len(test_list)!=47:
             print("Raft mode - error in length of test quantity list: ", len(test_list))
             raise ValueError
 
@@ -918,7 +923,10 @@ class renderFocalPlane():
                 run_data = self.get_testq(raft_slot=raft_slot_current)
 
             run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
-            run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
+            if self.solo_corner_raft == True:
+                run_data = [[ccd_data[j] for j in self.corner_raft_amp_ordering] for ccd_data in run_data]
+            else:
+                run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
             run_data = [val for sublist in run_data for val in sublist]
 
             test_q.extend(run_data)
@@ -940,7 +948,10 @@ class renderFocalPlane():
                 # fetch the CCD content from the cache
                 ccd_list = self.ccd_content_cache[self.current_run][self.installed_raft_names[raft]]
                 ccd_map = dict((ccd[1], ccd) for ccd in ccd_list)
-                ccd_list = [ccd_map[ccd] for ccd in self.ccd_ordering]
+                if self.solo_corner_raft == True:
+                    ccd_list = [ccd_map[ccd] for ccd in self.corner_raft_ccd_ordering]
+                else:
+                    ccd_list = [ccd_map[ccd] for ccd in self.ccd_ordering]
 
             else:
                 ccd_list = self.single_ccd_name
@@ -948,28 +959,103 @@ class renderFocalPlane():
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
 
-            for ccd in range(num_ccd):
+            if raft not in [0, 4, 20, 24] and self.solo_corner_raft==False:
 
-                for amp in range(16):
-                    cen_x = raft_x + self.ccd_center_x[ccd]
-                    cen_y = raft_y - self.ccd_center_y[ccd]
+                for ccd in range(num_ccd):
 
-                    a_cen_x = cen_x + self.amp_center_x[amp]
-                    a_cen_y = cen_y + self.amp_center_y[amp]
+                    for amp in range(16):
+                        cen_x = raft_x + self.ccd_center_x[ccd]
+                        cen_y = raft_y - self.ccd_center_y[ccd]
 
-                    x.append(a_cen_x)
-                    y.append(a_cen_y)
-                    raft_name.append(self.installed_raft_names[raft])
-                    raft_slot.append(self.raft_slot_names[raft])
-                    ccd_name.append(ccd_list[ccd][0])
-                    ccd_slot.append(ccd_list[ccd][1])
-                    amp_number.append(self.amp_ordering[amp]+1)
+                        a_cen_x = cen_x + self.amp_center_x[amp]
+                        a_cen_y = cen_y + self.amp_center_y[amp]
+
+                        x.append(a_cen_x)
+                        y.append(a_cen_y)
+                        raft_name.append(self.installed_raft_names[raft])
+                        raft_slot.append(self.raft_slot_names[raft])
+                        ccd_name.append(ccd_list[ccd][0])
+                        ccd_slot.append(ccd_list[ccd][1])
+                        amp_number.append(self.amp_ordering[amp]+1)
+            elif raft == 0 or self.solo_corner_raft==True:
+                for ccd in [1, 2, 5]:
+                    for amp in range(16):
+                        cen_x = raft_x + self.ccd_center_x[ccd]
+                        cen_y = raft_y - self.ccd_center_y[ccd]
+
+                        a_cen_x = cen_x + self.amp_center_x[amp]
+                        a_cen_y = cen_y + self.amp_center_y[amp]
+
+                        x.append(a_cen_x)
+                        y.append(a_cen_y)
+                        raft_name.append(self.installed_raft_names[raft])
+                        raft_slot.append(self.raft_slot_names[raft])
+                        ccd_name.append(ccd_list[ccd][0])
+                        ccd_slot.append(ccd_list[ccd][1])
+                        amp_number.append(self.amp_ordering[amp]+1)
+            elif raft == 4 or self.solo_corner_raft==True:
+                for ccd in [3, 0, 1]:
+                    for amp in range(16):
+                        cen_x = raft_x + self.ccd_center_x[ccd]
+                        cen_y = raft_y - self.ccd_center_y[ccd]
+
+                        a_cen_x = cen_x + self.amp_center_x[amp]
+                        a_cen_y = cen_y + self.amp_center_y[amp]
+
+                        x.append(a_cen_x)
+                        y.append(a_cen_y)
+                        raft_name.append(self.installed_raft_names[raft])
+                        raft_slot.append(self.raft_slot_names[raft])
+                        ccd_name.append(ccd_list[ccd][0])
+                        ccd_slot.append(ccd_list[ccd][1])
+                        amp_number.append(self.amp_ordering[amp]+1)
+            elif raft == 20 or self.solo_corner_raft==True:
+                for ccd in [7, 8, 5]:
+                    for amp in range(16):
+                        cen_x = raft_x + self.ccd_center_x[ccd]
+                        cen_y = raft_y - self.ccd_center_y[ccd]
+
+                        a_cen_x = cen_x + self.amp_center_x[amp]
+                        a_cen_y = cen_y + self.amp_center_y[amp]
+
+                        x.append(a_cen_x)
+                        y.append(a_cen_y)
+                        raft_name.append(self.installed_raft_names[raft])
+                        raft_slot.append(self.raft_slot_names[raft])
+                        ccd_name.append(ccd_list[ccd][0])
+                        ccd_slot.append(ccd_list[ccd][1])
+                        amp_number.append(self.amp_ordering[amp]+1)
+            elif raft == 24 or self.solo_corner_raft==True:
+                for ccd in [3, 6, 7]:
+                    for amp in range(16):
+                        cen_x = raft_x + self.ccd_center_x[ccd]
+                        cen_y = raft_y - self.ccd_center_y[ccd]
+
+                        a_cen_x = cen_x + self.amp_center_x[amp]
+                        a_cen_y = cen_y + self.amp_center_y[amp]
+
+                        x.append(a_cen_x)
+                        y.append(a_cen_y)
+                        raft_name.append(self.installed_raft_names[raft])
+                        raft_slot.append(self.raft_slot_names[raft])
+                        ccd_name.append(ccd_list[ccd][0])
+                        ccd_slot.append(ccd_list[ccd][1])
+                        amp_number.append(self.amp_ordering[amp]+1)
 
         ready_data_time = time.time() - enter_time
 
-        self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
-                                                         ccd_name=ccd_name, ccd_slot=ccd_slot,
-                                                         amp_number=amp_number, test_q=test_q)))
+        print('ColumnDataSource')
+        print('x',len(x))
+        print('y',len(y))
+        print('raft_name',len(raft_name))
+        print('raft_slot',len(raft_slot))
+        print('ccd_name',len(ccd_name))
+        print('ccd_slot',len(ccd_slot))
+        print('amp_number',len(amp_number))
+        print('test_q',len(test_q))
+        self.source = ColumnDataSource(pd.DataFrame(dict(x=x[0:24], y=y[0:24], raft_name=raft_name[0:24], raft_slot=raft_slot[0:24],
+                                                         ccd_name=ccd_name[0:24], ccd_slot=ccd_slot[0:24],
+                                                         amp_number=amp_number[0:24], test_q=test_q)))
 
         # draw all rafts and CCDs in full mode
         if self.full_FP_mode is True:

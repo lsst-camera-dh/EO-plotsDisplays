@@ -937,8 +937,6 @@ class renderFocalPlane():
 
             run_data = [val for sublist in run_data for val in sublist]
 
-            print('RUN DATA',run_data,'len',len(run_data))
-
             test_q.extend(run_data)
 
             num_ccd = 9
@@ -987,7 +985,7 @@ class renderFocalPlane():
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
                         amp_number.append(self.amp_ordering[amp]+1)
-            elif self.solo_corner_raft==True:
+            elif self.solo_corner_raft==True & self.solo_raft_mode==True:
                 for ccd in [1, 2, 5]:
                     for amp in range(16):
                         cen_x = raft_x + self.ccd_center_x[ccd]
@@ -1070,14 +1068,6 @@ class renderFocalPlane():
 
         ready_data_time = time.time() - enter_time
 
-        print('x',x,'len',len(x))
-        print('y',y,'len',len(y))
-        print('raft_name',raft_name,'len',len(raft_name))
-        print('raft_slot',raft_slot,'len',len(raft_slot))
-        print('ccd_name',ccd_name,'len',len(ccd_name))
-        print('ccd_slot',ccd_slot,'len',len(ccd_slot))
-        print('amp_number',amp_number,'len',len(amp_number))
-        print('test_q',test_q,'len',len(test_q))
         self.source = ColumnDataSource(pd.DataFrame(dict(x=x, y=y, raft_name=raft_name, raft_slot=raft_slot,
                                                          ccd_name=ccd_name, ccd_slot=ccd_slot,
                                                          amp_number=amp_number, test_q=test_q)))

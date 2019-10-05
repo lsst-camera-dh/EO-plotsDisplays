@@ -208,11 +208,11 @@ class renderFocalPlane():
                          ('S12', 'S12'), ('S20', 'S20'), ('S21', 'S21'), ('S22', 'S22')]
 
         # list of the slot names and their order on the focal plane
-        self.raft_slot_names = ["C0","R41", "R42", "R43","C1",
+        self.raft_slot_names = ["R40", "R41", "R42", "R43", "R44",
                                 "R30", "R31", "R32", "R33", "R34",
                                 "R20", "R21", "R22", "R23", "R24",
                                 "R10", "R11", "R12", "R13", "R14",
-                                "C2","R01", "R02", "R03","C4" ]
+                                "R00", "R01", "R02", "R03", "R04" ]
         self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
         #TODO get the amp ordering for the corner rafts
         self.corner_raft_amp_ordering_one = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
@@ -967,7 +967,7 @@ class renderFocalPlane():
             raft_x = self.raft_center_x[raft]
             raft_y = self.raft_center_y[raft]
 
-            if raft not in [0, 4, 20, 24] and self.solo_corner_raft==False:
+            if raft not in [0, 4, 20, 24] and self.solo_corner_raft == False:
 
                 for ccd in range(num_ccd):
 
@@ -1001,8 +1001,18 @@ class renderFocalPlane():
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
                         amp_number.append(self.amp_ordering[amp]+1)
-            elif raft == 0:
-                for ccd in [1, 2, 5]:
+            else:
+                if raft == 0:
+                    ccd_order = [1,2,5]
+                elif raft == 4:
+                    ccd_order = [3,0,1]
+                elif raft == 20:
+                    ccd_order = [7,8,5]
+                else:
+                    ccd_order = [3,6,7]
+
+                ccd_idx = 0
+                for ccd in ccd_order:
                     for amp in range(16):
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
@@ -1014,57 +1024,10 @@ class renderFocalPlane():
                         y.append(a_cen_y)
                         raft_name.append(self.installed_raft_names[raft])
                         raft_slot.append(self.raft_slot_names[raft])
-                        ccd_name.append(ccd_list[ccd][0])
-                        ccd_slot.append(ccd_list[ccd][1])
-                        amp_number.append(self.amp_ordering[amp]+1)
-            elif raft == 4:
-                for ccd in [3, 0, 1]:
-                    for amp in range(16):
-                        cen_x = raft_x + self.ccd_center_x[ccd]
-                        cen_y = raft_y - self.ccd_center_y[ccd]
-
-                        a_cen_x = cen_x + self.amp_center_x[amp]
-                        a_cen_y = cen_y + self.amp_center_y[amp]
-
-                        x.append(a_cen_x)
-                        y.append(a_cen_y)
-                        raft_name.append(self.installed_raft_names[raft])
-                        raft_slot.append(self.raft_slot_names[raft])
-                        ccd_name.append(ccd_list[ccd][0])
-                        ccd_slot.append(ccd_list[ccd][1])
-                        amp_number.append(self.amp_ordering[amp]+1)
-            elif raft == 20:
-                for ccd in [7, 8, 5]:
-                    for amp in range(16):
-                        cen_x = raft_x + self.ccd_center_x[ccd]
-                        cen_y = raft_y - self.ccd_center_y[ccd]
-
-                        a_cen_x = cen_x + self.amp_center_x[amp]
-                        a_cen_y = cen_y + self.amp_center_y[amp]
-
-                        x.append(a_cen_x)
-                        y.append(a_cen_y)
-                        raft_name.append(self.installed_raft_names[raft])
-                        raft_slot.append(self.raft_slot_names[raft])
-                        ccd_name.append(ccd_list[ccd][0])
-                        ccd_slot.append(ccd_list[ccd][1])
-                        amp_number.append(self.amp_ordering[amp]+1)
-            elif raft == 24:
-                for ccd in [3, 6, 7]:
-                    for amp in range(16):
-                        cen_x = raft_x + self.ccd_center_x[ccd]
-                        cen_y = raft_y - self.ccd_center_y[ccd]
-
-                        a_cen_x = cen_x + self.amp_center_x[amp]
-                        a_cen_y = cen_y + self.amp_center_y[amp]
-
-                        x.append(a_cen_x)
-                        y.append(a_cen_y)
-                        raft_name.append(self.installed_raft_names[raft])
-                        raft_slot.append(self.raft_slot_names[raft])
-                        ccd_name.append(ccd_list[ccd][0])
-                        ccd_slot.append(ccd_list[ccd][1])
-                        amp_number.append(self.amp_ordering[amp]+1)
+                        ccd_name.append(ccd_list[ccd_idx][0])
+                        ccd_slot.append(ccd_list[ccd_idx][1])
+                        amp_number.append(self.amp_ordering[amp] + 1)
+                    ccd_idx += 2
 
         ready_data_time = time.time() - enter_time
 

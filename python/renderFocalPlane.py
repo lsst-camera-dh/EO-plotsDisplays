@@ -918,6 +918,9 @@ class renderFocalPlane():
             # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
             self.set_db(run=self.current_run)
 
+            # will discover in get_testq if this is a CR
+            self.solo_corner_raft = False
+
             try:
                 run_data = self.get_testq(raft_slot=raft_slot_current)
             except KeyError:
@@ -1026,7 +1029,7 @@ class renderFocalPlane():
                         raft_slot.append(self.raft_slot_names[raft])
                         ccd_name.append(ccd_list[ccd_idx][0])
                         ccd_slot.append(ccd_list[ccd_idx][1])
-                        amp_number.append(self.amp_ordering[amp] + 1)
+                        amp_number.append(self.corner_raft_amp_ordering_one[amp] + 1)
                     ccd_idx += 2
 
         ready_data_time = time.time() - enter_time

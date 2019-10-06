@@ -1005,14 +1005,14 @@ class renderFocalPlane():
                         ccd_slot.append(ccd_list[ccd][1])
                         amp_number.append(self.amp_ordering[amp]+1)
             else:
-                if raft == 0:
-                    ccd_order = [1,2,5]
-                elif raft == 4:
-                    ccd_order = [3,0,1]
-                elif raft == 20:
-                    ccd_order = [7,8,5]
-                else:
-                    ccd_order = [3,6,7]
+                if raft == 0:  # R40
+                    ccd_order = [1,5,2]
+                elif raft == 4:  # R44
+                    ccd_order = [3,1,0]
+                elif raft == 20:  # R00
+                    ccd_order = [7,5,8]
+                else:            # R04
+                    ccd_order = [3,7,6]
 
                 ccd_idx = 0
                 for ccd in ccd_order:

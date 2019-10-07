@@ -381,7 +381,17 @@ class renderFocalPlane():
                 if self.single_ccd_mode:
                     list_idx = 0
 
-                for i in range(16):
+                # kludge for CR - fake 2 guider half-sensors as a single one - assume they arrive in order
+
+                t_end = 16
+                t_start = 0
+                if ccd == "SW0":
+                    t_end = 8
+                elif ccd == "SW1":
+                    t_start = 8
+                    t_end = 16
+
+                for i in range(t_start, t_end):
                     test_list[list_idx+i] = t[ccd][i]
 
         else:

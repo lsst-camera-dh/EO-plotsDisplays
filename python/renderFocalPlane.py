@@ -213,13 +213,14 @@ class renderFocalPlane():
                                 "R20", "R21", "R22", "R23", "R24",
                                 "R10", "R11", "R12", "R13", "R14",
                                 "R00", "R01", "R02", "R03", "R04" ]
-        self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
-        #TODO get the amp ordering for the corner rafts
-        self.corner_raft_amp_ordering_one = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-        self.corner_raft_amp_ordering_two = [0,1,2,3,4,5,6,7]
+#        self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
+        self.amp_ordering = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+        self.corner_raft_amp_ordering_guider = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        self.corner_raft_amp_ordering_wave = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
         self.ccd_ordering = ['S00','S01','S02',
-                            'S10','S11','S12',
-                            'S20','S21','S22']
+                             'S10','S11','S12',
+                             'S20','S21','S22']
         self.corner_raft_ccd_ordering = ['ccd1','ccd1','ccd2','ccd2','guider','guider']
 
         # booleans for whether a slot on the FP is occupied
@@ -255,8 +256,10 @@ class renderFocalPlane():
         self.amp_center_x.extend(
             [-self.ccd_width / 2. - self.amp_width / 2. + (j + 1) / 8. for j in range(8)])
 
-        self.amp_center_y = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
-        self.amp_center_y.extend([-0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
+#        self.amp_center_y = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
+#        self.amp_center_y.extend([-0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
+        self.amp_center_y = [-0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25, -0.25]
+        self.amp_center_y.extend([0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25])
 
         """
         Layout of raft, CCDs, amps:
@@ -358,15 +361,21 @@ class renderFocalPlane():
                 c = self.test_cache.setdefault(self.current_run, {})
                 c[raft_list] = res
 
-
         test_list = []
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
+        CR_ccd_idx = {"SG0":0, "SG1":1, "SW0":2, "SW1":2.5}
 
         # fetch the test from the cache
 
 #        if self.EO_type == "I&T-BOT":
+
+        if raft_slot in ["R00", "R04", "R40", "R44"]:  # CR slots
+            len_raft = 48
+        else:
+            len_raft = 144
+
         if BOT:
-            test_list = [-1.]*144
+            test_list = [-1.]*len_raft
             if self.single_ccd_mode:
                 test_list = [-1.] * 16
             try:
@@ -377,7 +386,13 @@ class renderFocalPlane():
             for ccd in t:
                 if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
                     continue
-                list_idx = 16 * ccd_idx[ccd]
+
+                # calculate offset per sensor into the test q array
+                if "G" in ccd or "W" in ccd:
+                    list_idx = int(16 * CR_ccd_idx[ccd])
+                else:
+                    list_idx = 16 * ccd_idx[ccd]
+
                 if self.single_ccd_mode:
                     list_idx = 0
 
@@ -385,11 +400,8 @@ class renderFocalPlane():
 
                 t_end = 16
                 t_start = 0
-                if ccd == "SW0":
+                if ccd == "SW0" or ccd == "SW1":
                     t_end = 8
-                elif ccd == "SW1":
-                    t_start = 8
-                    t_end = 16
 
                 for i in range(t_start, t_end):
                     test_list[list_idx+i] = t[ccd][i]
@@ -433,7 +445,8 @@ class renderFocalPlane():
 
         if self.emulate is False:
             if self.full_FP_mode is True:
-                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
+#                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
+                raft_list = self.connections["eFP"]["Prod"].focalPlaneContents()
                 self.current_FP_raft_list = raft_list
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
@@ -870,6 +883,21 @@ class renderFocalPlane():
 
         setup_time = time.time() - enter_time
 
+        CR_content = {"R40": {"SG0": {"pos": 1, "orient": "up"},
+                              "SG1": {"pos": 5, "orient": "side"},
+                              "SW": {"pos": 2, "orient": "side"}},
+                      "R44": {"SG0": {"pos": 3, "orient": "side"},
+                              "SG1": {"pos": 1, "orient": "up"},
+                              "SW": {"pos": 0, "orient": "up"}},
+                      "R00": {"SG0": {"pos": 5, "orient": "side"},
+                              "SG1": {"pos": 7, "orient": "side"},
+                              "SW": {"pos": 8, "orient": "up"}},
+                      "R04": {"SG0": {"pos": 7, "orient": "up"},
+                              "SG1": {"pos": 3, "orient": "side"},
+                              "SW": {"pos": 6, "orient": "side"}}
+                      }
+        CR_slot_index = {0:"R40", 4:"R44", 20:"R00", 24:"R04"}
+
         # work out all the squares for the rafts, CCDs and amps. If in single mode, suppress other rafts/
         # CCDs
         for raft in range(25):
@@ -878,35 +906,17 @@ class renderFocalPlane():
             raft_x_list.append(raft_x)
             raft_y_list.append(raft_y)
 
-            # Add the corner rafts
             if raft not in [0, 4, 20, 24]:
                 for ccd in range(9):
                     cen_x = raft_x + self.ccd_center_x[ccd]
                     cen_y = raft_y - self.ccd_center_y[ccd]
                     cen_x_list.append(cen_x)
                     cen_y_list.append(cen_y)
-            elif raft == 0:
-                for ccd in [1, 2, 5]:
-                    cen_x = raft_x + self.ccd_center_x[ccd]
-                    cen_y = raft_y - self.ccd_center_y[ccd]
-                    cen_x_list.append(cen_x)
-                    cen_y_list.append(cen_y)
-            elif raft == 4:
-                for ccd in [3, 0, 1]:
-                    cen_x = raft_x + self.ccd_center_x[ccd]
-                    cen_y = raft_y - self.ccd_center_y[ccd]
-                    cen_x_list.append(cen_x)
-                    cen_y_list.append(cen_y)
-            elif raft == 20:
-                for ccd in [7, 8, 5]:
-                    cen_x = raft_x + self.ccd_center_x[ccd]
-                    cen_y = raft_y - self.ccd_center_y[ccd]
-                    cen_x_list.append(cen_x)
-                    cen_y_list.append(cen_y)
-            elif raft == 24:
-                for ccd in [3, 6, 7]:
-                    cen_x = raft_x + self.ccd_center_x[ccd]
-                    cen_y = raft_y - self.ccd_center_y[ccd]
+            else:  # Add the corner rafts
+                for CR_ccd in CR_content[CR_slot_index[raft]]:
+                    pos = CR_content[CR_slot_index[raft]][CR_ccd]["pos"]
+                    cen_x = raft_x + self.ccd_center_x[pos]
+                    cen_y = raft_y - self.ccd_center_y[pos]
                     cen_x_list.append(cen_x)
                     cen_y_list.append(cen_y)
 
@@ -937,18 +947,21 @@ class renderFocalPlane():
                 self.current_test = self.previous_test
                 run_data = self.get_testq(raft_slot=raft_slot_current)
 
-            if len(run_data)==144:
-                run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
-            elif len(run_data)==48:
-                run_data = [run_data[i:i + 16] for i in range(0, 32, 16)]+[run_data[i:i + 8] for i in range(32, 48, 8)]
-            else:
-                run_data = []
-            if self.solo_corner_raft == True:
-                run_data = [[run_data[i][j] for j in self.corner_raft_amp_ordering_one] for i in range(2)]+[[run_data[i][j] for j in self.corner_raft_amp_ordering_two] for i in range(2)]
-            else:
-                run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
+            if False:
+                if len(run_data)==144:
+                    run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
+                elif len(run_data)==48:
+                    run_data = [run_data[i:i + 16] for i in range(0, 32, 16)]+[run_data[i:i + 8] for i in
+                                                                               range(32, 48, 8)]
+                else:
+                    run_data = []
+                if self.solo_corner_raft == True:
+                    run_data = [[run_data[i][j] for j in self.corner_raft_amp_ordering_wave] for i in range(2)]+[[
+                        run_data[i][j] for j in self.corner_raft_amp_ordering_guider] for i in range(2)]
+                else:
+                    run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
 
-            run_data = [val for sublist in run_data for val in sublist]
+                run_data = [val for sublist in run_data for val in sublist]
 
             test_q.extend(run_data)
 
@@ -958,9 +971,11 @@ class renderFocalPlane():
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
                     t_0_hierarchy = time.time()
-                    ccd_list_run = self.connections["eR"][self.dbsel].raftContents(
-                        raftName=self.installed_raft_names[raft],
-                        run=self.current_run)
+#                    ccd_list_run = self.connections["eR"][self.dbsel].raftContents(
+#                        raftName=self.installed_raft_names[raft],
+#                        run=self.current_run)
+                    ccd_list_run = self.connections["eR"]["Prod"].raftContents(
+                        raftName=self.installed_raft_names[raft])
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy
                     r = self.ccd_content_cache.setdefault(self.current_run, {})
@@ -984,7 +999,8 @@ class renderFocalPlane():
 
                 for ccd in range(num_ccd):
 
-                    for amp in range(16):
+                    #for amp in range(16):
+                    for amp in self.amp_ordering:
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
 
@@ -997,8 +1013,9 @@ class renderFocalPlane():
                         raft_slot.append(self.raft_slot_names[raft])
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
-                        amp_number.append(self.amp_ordering[amp]+1)
-            elif self.solo_corner_raft==True & self.solo_raft_mode==True:
+                        #amp_number.append(self.amp_ordering[amp]+1)
+                        amp_number.append(amp+1)
+            elif self.solo_corner_raft == True & self.solo_raft_mode == True & False:  # not needed?
                 for ccd in [1, 2, 5]:
                     for amp in range(16):
                         cen_x = raft_x + self.ccd_center_x[ccd]
@@ -1014,19 +1031,18 @@ class renderFocalPlane():
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
                         amp_number.append(self.amp_ordering[amp]+1)
-            else:
-                if raft == 0:  # R40
-                    ccd_order = [1,5,2]
-                elif raft == 4:  # R44
-                    ccd_order = [3,1,0]
-                elif raft == 20:  # R00
-                    ccd_order = [7,5,8]
-                else:            # R04
-                    ccd_order = [3,7,6]
+            else:  # get the CR sensor positions
+                CR_slot = CR_content[CR_slot_index[raft]]
+                ccd_order = [CR_slot[sensor]["pos"] for sensor in CR_slot]
 
                 ccd_idx = 0
                 for ccd in ccd_order:
-                    for amp in range(16):
+                    if ccd == ccd_order[2]:
+                        amp_order = self.corner_raft_amp_ordering_wave
+                    else:
+                        amp_order = self.corner_raft_amp_ordering_guider
+
+                    for amp in amp_order:
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
 
@@ -1039,7 +1055,15 @@ class renderFocalPlane():
                         raft_slot.append(self.raft_slot_names[raft])
                         ccd_name.append(ccd_list[ccd_idx][0])
                         ccd_slot.append(ccd_list[ccd_idx][1])
-                        amp_number.append(self.corner_raft_amp_ordering_one[amp] + 1)
+                        amp_number.append(amp + 1)
+
+                        #if ccd == ccd_order[2]:
+                        #   new_amp = amp
+                        #    if amp > 7:
+                        #        new_amp = 15 - amp
+                        #    amp_number.append(self.corner_raft_amp_ordering_wave[new_amp] + 1)
+                        #else:
+                        #    amp_number.append(self.corner_raft_amp_ordering_guider[amp] + 1)
                     ccd_idx += 2
 
         ready_data_time = time.time() - enter_time

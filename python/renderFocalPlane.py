@@ -1059,12 +1059,16 @@ class renderFocalPlane():
                         slot_name = self.corner_raft_ccd_translate[eT_name]
 
                         # label the WFS as 2 units with amps 1-8
-                        if slot_name == "SW" and amp > 7:
-                            slot = slot_name + "1"
-                            new_amp = amp - 8
+                        new_amp = amp
+                        if slot_name == "SW":
+                            if amp > 7:
+                                slot = slot_name + "1"
+                                new_amp = amp - 8
+                            else:
+                                slot = slot_name + "0"
                         else:
-                            slot = slot_name + "0"
-                            new_amp = amp
+                            slot = slot_name
+
                         ccd_slot.append(slot)
                         amp_number.append(new_amp + 1)
 

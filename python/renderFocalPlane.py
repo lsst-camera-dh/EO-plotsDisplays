@@ -222,6 +222,7 @@ class renderFocalPlane():
                              'S10','S11','S12',
                              'S20','S21','S22']
         self.corner_raft_ccd_ordering = ['ccd1','ccd1','ccd2','ccd2','guider','guider']
+        self.corner_raft_ccd_translate = {"ccd1": "SG0", "ccd2": "SG1", "guider": "SW"}
 
         # booleans for whether a slot on the FP is occupied
         self.raft_is_there = [False] * 25
@@ -1015,7 +1016,7 @@ class renderFocalPlane():
                         ccd_slot.append(ccd_list[ccd][1])
                         #amp_number.append(self.amp_ordering[amp]+1)
                         amp_number.append(amp+1)
-            elif self.solo_corner_raft == True & self.solo_raft_mode == True & False:  # not needed?
+            elif self.solo_corner_raft == True and self.solo_raft_mode == True and False:  # not needed?
                 for ccd in [1, 2, 5]:
                     for amp in range(16):
                         cen_x = raft_x + self.ccd_center_x[ccd]
@@ -1054,8 +1055,18 @@ class renderFocalPlane():
                         raft_name.append(self.installed_raft_names[raft])
                         raft_slot.append(self.raft_slot_names[raft])
                         ccd_name.append(ccd_list[ccd_idx][0])
-                        ccd_slot.append(ccd_list[ccd_idx][1])
-                        amp_number.append(amp + 1)
+                        eT_name = ccd_list[ccd_idx][1]
+                        slot_name = self.corner_raft_ccd_translate[eT_name]
+
+                        # label the WFS as 2 units with amps 1-8
+                        if slot_name == "SW" and amp > 7:
+                            slot = slot_name + "1"
+                            new_amp = amp - 8
+                        else:
+                            slot = slot_name + "0"
+                            new_amp = amp
+                        ccd_slot.append(slot)
+                        amp_number.append(new_amp + 1)
 
                         #if ccd == ccd_order[2]:
                         #   new_amp = amp

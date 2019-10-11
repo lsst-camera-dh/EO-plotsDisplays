@@ -92,7 +92,7 @@ class renderFocalPlane():
 
         self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
                                    button_type="success",
-                                   menu=self.menu_modes, width=150)
+                                   menu=self.menu_modes, width=350)
 
         # set up the dropdown menu for links, along with available modes list
         self.menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
@@ -112,19 +112,19 @@ class renderFocalPlane():
                                    menu=self.menu_links)
         self.drop_links.js_on_change('value', self.drop_links_callback)
 
-        self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=50)
+        self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=350)
         self.drop_raft.on_change('value', self.update_dropdown_raft)
 
         self.drop_ccd = Dropdown(label="Select CCD",
-                                 button_type="warning", menu=[], width=75)
+                                 button_type="warning", menu=[], width=350)
         self.drop_ccd.on_change('value', self.update_dropdown_ccd)
 
         # define buttons to toggle emulation mode, and to fetch a config txt file
-        self.button = Button(label="Emulate Mode", button_type="success", width=50)
-        self.button_file = Button(label="Upload Emulation Config", button_type="success", width=50)
+        self.button = Button(label="Emulate Mode", button_type="success", width=350)
+        self.button_file = Button(label="Upload Emulation Config", button_type="success", width=350)
 
         # button to terminate app
-        self.button_exit = Button(label="Exit", button_type="danger", width=30)
+        self.button_exit = Button(label="Exit", button_type="danger", width=350)
         self.button_exit.on_click(self.do_exit)
 
         # readining in the emulation config file depends on two callbacks - one triggering reading the
@@ -203,7 +203,7 @@ class renderFocalPlane():
         self.menu_test.append(("User supplied", "User"))
 
         # drop down menu of test names, taking the menu from self.menu_test
-        self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=150)
+        self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=350)
         self.drop_test.on_change('value', self.update_dropdown_test)
 
         self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,

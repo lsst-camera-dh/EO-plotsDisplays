@@ -6,7 +6,7 @@ from get_EO_analysis_results import get_EO_analysis_results
 from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
 from eTraveler.clientAPI.connection import Connection
-
+from get_steps_schema import get_steps_schema
 from bokeh.models import LinearAxis, Grid, ContinuousColorMapper, LinearColorMapper, ColorBar, \
     LogTicker
 from bokeh.plotting import figure
@@ -201,6 +201,7 @@ class renderFocalPlane():
                           ('PTC gain', 'ptc_gain'), ('Pixel mean', 'pixel_mean'), ('Full Well', 'full_well'),
                           ('Nonlinearity', 'max_frac_dev')]
         self.menu_test.append(("User supplied", "User"))
+        self.menu_test_cache = {}
 
         # drop down menu of test names, taking the menu from self.menu_test
         self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=350)
@@ -324,6 +325,7 @@ class renderFocalPlane():
         EO["Prod"] = self.get_EO_Prod
         EO["Dev"] = self.get_EO_Dev
 
+        self.get_step = get_steps_schema()
         self.dbsel = "Prod"
 
     def set_db(self, run=None):
@@ -360,6 +362,9 @@ class renderFocalPlane():
                                                                                    run=self.current_run)
                 res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
                 self.test_cache[self.current_run] = res
+                avail_tests = self.get_step.get_test_info(runData=data)
+                self.menu_test_cache[self.current_run] = [(t, t) for t in avail_tests]
+
         else:
             if self.current_run not in self.test_cache or raft_index not in \
                     self.test_cache[self.current_run]:
@@ -369,12 +374,17 @@ class renderFocalPlane():
                 res = self.connections["get_EO"][self.dbsel].get_all_results(data=data, device=raft_list)
                 c = self.test_cache.setdefault(self.current_run, {})
                 c[raft_list] = res
+                avail_tests = self.get_step.get_test_info(runData=data)
+                self.menu_test_cache[self.current_run] = [(t, t) for t in avail_tests]
 
         test_list = []
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
         CR_ccd_idx = {"SG0":0, "SG1":1, "SW0":2, "SW1":2.5}
 
         # fetch the test from the cache
+
+        self.menu_test = self.menu_test_cache[self.current_run]
+        self.drop_test.menu = self.menu_test
 
 #        if self.EO_type == "I&T-BOT":
 
@@ -1140,6 +1150,7 @@ class renderFocalPlane():
             lo_val = min(test_q)
             hi_val = max(test_q)
             self.test_slider.value = (lo_val, hi_val)
+            self.test_slider.end = hi_val
             self.test_transition = False
         else:
             lo_val = self.test_slider.value[0]

@@ -165,7 +165,7 @@ class renderFocalPlane():
         """)
 
         self.test_slider = RangeSlider(title="Test Value Range", start=0, end=100, value=(0, 100),
-                                       callback_policy="mouseup", callback_throttle=300)
+                                       callback_policy="mouseup", callback_throttle=300, width=900)
         self.test_slider.on_change('value_throttled', self.test_slider_select)
         self.test_transition = True
         self.test_min = 0

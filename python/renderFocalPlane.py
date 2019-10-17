@@ -1151,6 +1151,7 @@ class renderFocalPlane():
             hi_val = max(test_q)
             self.test_slider.value = (lo_val, hi_val)
             self.test_slider.end = hi_val
+            self.test_slider.step = (hi_val - lo_val)/500.
             self.test_transition = False
         else:
             lo_val = self.test_slider.value[0]

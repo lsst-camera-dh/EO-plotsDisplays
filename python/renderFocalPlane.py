@@ -10,7 +10,7 @@ from get_steps_schema import get_steps_schema
 from bokeh.models import LinearAxis, Grid, ContinuousColorMapper, LinearColorMapper, ColorBar, \
     LogTicker
 from bokeh.plotting import figure
-from bokeh.palettes import Viridis6 as palette
+from bokeh.palettes import Viridis256 as palette #@UnresolvedImport
 from bokeh.layouts import row, layout
 from bokeh.models import CustomJS, ColumnDataSource, CDSView, BooleanFilter
 from bokeh.models.widgets import TextInput, Dropdown, Button, RangeSlider

@@ -359,6 +359,9 @@ class renderFocalPlane():
                 ccd_slot = self.single_ccd_name[0][1]
             else:
                 ccd_slot = None
+                if raft_slot in ["R00", "R04", "R40", "R44"]:
+                    self.solo_corner_raft = True
+
             return self.user_hook(run=self.current_run, mode=self.current_mode, raft=raft_slot,
                                   ccd=ccd_slot)
 

@@ -83,7 +83,7 @@ class renderFocalPlane():
         # set up run number text box - disable it in emulate mode
         self.text_input = TextInput(value=str(self.get_current_run()), title="Select Run")
 
-        self.user_module_input = TextInput(value="", title="User Modeule")
+        self.user_module_input = TextInput(value="", title="User Module")
 
         if self.emulate is True:
             self.text_input.title = "Select Run Disabled"
@@ -363,7 +363,7 @@ class renderFocalPlane():
                     self.solo_corner_raft = True
 
             return self.user_hook(run=self.current_run, mode=self.current_mode, raft=raft_slot,
-                                  ccd=ccd_slot)
+                                  ccd=ccd_slot, test_cache=self.test_cache)
 
         if BOT:
             if self.current_run not in self.test_cache or raft_index not in \

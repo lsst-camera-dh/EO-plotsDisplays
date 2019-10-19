@@ -394,7 +394,8 @@ class renderFocalPlane():
         self.menu_test = self.menu_test_cache[self.current_run]
         self.drop_test.menu = self.menu_test
         if self.user_hook is not None:
-            self.menu_test.insert(0,("User", "User"))
+            if self.menu_test[0][0] != "User":
+                self.menu_test.insert(0,("User", "User"))
 
 #        if self.EO_type == "I&T-BOT":
 
@@ -830,6 +831,11 @@ class renderFocalPlane():
     def update_user_input(self, sattr, old, new):
         mod = __import__(self.user_module_input.value)
         self.user_hook = mod.hook
+        l_new_run = self.render()
+        m_new_run = layout(self.interactors, l_new_run)
+        self.layout.children = m_new_run.children
+
+        print("loaded ", self.user_module_input.value)
 
     # handler for when test quantity slider is changed
     def test_slider_select(self, sattr, old, new):

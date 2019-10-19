@@ -96,6 +96,7 @@ class renderFocalPlane():
 
         # set up the dropdown menu for links, along with available modes list
         self.menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
+                           ("9 SR + 4 CR FP runs", "https://confluence.slac.stanford.edu/x/goKrDw"),
                            ("Single Raft Run Plots",
                             "http://slac.stanford.edu/exp/lsst/camera/SingleRaftEOPlots/bokehDashboard.html"),
                            ("List of Prod Good Raft Runs",

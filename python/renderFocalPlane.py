@@ -83,6 +83,8 @@ class renderFocalPlane():
         # set up run number text box - disable it in emulate mode
         self.text_input = TextInput(value=str(self.get_current_run()), title="Select Run")
 
+        self.user_module_input = TextInput(value="", title="User Modeule")
+
         if self.emulate is True:
             self.text_input.title = "Select Run Disabled"
 
@@ -174,6 +176,7 @@ class renderFocalPlane():
 
         self.drop_modes.on_change('value', self.update_dropdown_modes)
         self.text_input.on_change('value', self.update_text_input)
+        self.user_module_input.on_change('value', self.update_user_input)
         self.button.on_click(self.update_button)
         self.file_source.on_change('data', self.file_callback)
 
@@ -210,7 +213,7 @@ class renderFocalPlane():
 
         self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
                                       self.drop_modes),
-                                  row(self.button, self.button_file), row(self.test_slider))
+                                  row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
         self.layout = self.interactors
         self.map_layout = self.layout
 
@@ -352,8 +355,12 @@ class renderFocalPlane():
 
         # user override for "User"
         if self.user_hook is not None and self.current_test == "User":
-            return self.user_hook(run=self.current_run, mode=self.single_ccd_mode, slot=raft_slot)
-
+            if self.single_ccd_mode:
+                ccd_slot = self.single_ccd_name[0][1]
+            else:
+                ccd_slot = None
+            return self.user_hook(run=self.current_run, mode=self.current_mode, raft=raft_slot,
+                                  ccd=ccd_slot)
 
         if BOT:
             if self.current_run not in self.test_cache or raft_index not in \
@@ -386,6 +393,8 @@ class renderFocalPlane():
 
         self.menu_test = self.menu_test_cache[self.current_run]
         self.drop_test.menu = self.menu_test
+        if self.user_hook is not None:
+            self.menu_test.insert(0,("User", "User"))
 
 #        if self.EO_type == "I&T-BOT":
 
@@ -637,7 +646,7 @@ class renderFocalPlane():
                                                                                   self.drop_test,
                                                                                   self.drop_raft,
                                                                                   self.drop_modes),
-                                      row(self.button, self.button_file), row(self.test_slider))
+                                      row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -655,7 +664,7 @@ class renderFocalPlane():
             self.interactors = layout(row(self.button_exit, self.drop_links),
                                           row(self.text_input, self.drop_test, self.drop_ccd,
                                           self.drop_modes),
-                                      row(self.button, self.button_file), row(self.test_slider))
+                                      row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -696,7 +705,7 @@ class renderFocalPlane():
         self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
         self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
                                       self.drop_ccd,
-                                      self.drop_modes), row(self.button, self.button_file),
+                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -712,7 +721,7 @@ class renderFocalPlane():
         self.current_raft = raft_name
         self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
                                       self.drop_raft,
-                                      self.drop_modes), row(self.button, self.button_file),
+                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -736,7 +745,7 @@ class renderFocalPlane():
             self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
                                       self.drop_test,
                                           self.drop_modes),
-                                      row(self.button, self.button_file), row(self.test_slider))
+                                      row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -750,7 +759,7 @@ class renderFocalPlane():
                 self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
                                               self.drop_test,
                                               self.drop_raft, self.drop_modes), row(self.button,
-                                                                                    self.button_file),
+                                                                                    self.button_file, self.user_module_input),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -774,7 +783,7 @@ class renderFocalPlane():
                 self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
                                               self.drop_test,
                                               self.drop_ccd, self.drop_modes), row(self.button,
-                                                                                   self.button_file),
+                                                                                   self.button_file, self.user_module_input),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -798,7 +807,7 @@ class renderFocalPlane():
 
             self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
                                       self.drop_test,
-                                          self.drop_modes), row(self.button, self.button_file),
+                                          self.drop_modes), row(self.button, self.button_file, self.user_module_input),
                                       row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -818,6 +827,10 @@ class renderFocalPlane():
         else:
             self.text_input.title = "Select Run Disabled"
 
+    def update_user_input(self, sattr, old, new):
+        mod = __import__(self.user_module_input.value)
+        self.user_hook = mod.hook
+
     # handler for when test quantity slider is changed
     def test_slider_select(self, sattr, old, new):
         self.test_min = self.test_slider.value[0]
@@ -825,7 +838,7 @@ class renderFocalPlane():
 
         l_new_run = self.render()
         self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
-                                      self.drop_modes), row(self.button, self.button_file),
+                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
 
         m_new_run = layout(self.interactors, l_new_run)

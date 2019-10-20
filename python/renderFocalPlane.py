@@ -414,8 +414,13 @@ class renderFocalPlane():
             try:
                 t = self.test_cache[self.current_run][self.current_test][raft_slot]
             except KeyError:
-                raise KeyError(self.current_test + ": not available. Reverting to previous - " +
-                               self.previous_test)
+                #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
+                #               self.previous_test)
+                self.current_test = self.menu_test[0][0]
+                self.drop_test.value = self.current_test
+                t = self.test_cache[self.current_run][self.current_test][raft_slot]
+                pass
+
             for ccd in t:
                 if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
                     continue
@@ -443,8 +448,11 @@ class renderFocalPlane():
             try:
                 t = self.test_cache[self.current_run][self.current_raft][self.current_test]
             except KeyError:
-                raise KeyError(self.current_test + ": not available. Reverting to previous - " +
-                               self.previous_test)
+                #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
+                #               self.previous_test)
+                self.current_test = self.menu_test[0][0]
+                self.drop_test.value = self.current_test
+                t = self.test_cache[self.current_run][self.current_raft][self.current_test]
 
             ccd_name = ""
             for ccd in t:

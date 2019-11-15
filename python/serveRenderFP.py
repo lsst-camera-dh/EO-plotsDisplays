@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(
     description='Create heatmap of Camera EO test data quantities.')
 
 parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
-parser.add_argument('-r', '--run', default="6384D", help="run number")
+parser.add_argument('-r', '--run', default="6654D", help="run number")
 parser.add_argument('--hook', default=None, help="name of user hook module to load")
 parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
 parser.add_argument('-e', '--emulate', default=None, help="file spec for emulation config")
@@ -33,8 +33,11 @@ p_args = parser.parse_args()
 rFP = renderFocalPlane(db=p_args.db)
 
 if p_args.emulate is not None:
-    raft_list, run_list = rFP.parse_emulation_config(p_args.emulate)
-    # set a default emulation config
+    rc = rFP.set_emulation(config_spec=p_args.emulate)
+else:
+    rFP.current_run = p_args.run
+
+rFP.current_test = p_args.test
 
 # don't set single mode yet!
 
@@ -44,17 +47,7 @@ if p_args.hook is not None:
     mod = __import__(p_args.hook)
     rFP.user_hook = mod.hook
 
-# start up with a nominal run number and test name
-
-ini_run = p_args.run
-ini_test = p_args.test
-
-if p_args.run is not None:
-    ini_run = p_args.run
-if p_args.test is not None:
-    ini_test = p_args.test
-
-m_lay = rFP.render(run=ini_run, testq=ini_test)
+m_lay = rFP.render()
 
 if p_args.png is not None:
     export_png(rFP.map_layout, p_args.png)

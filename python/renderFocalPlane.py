@@ -90,7 +90,7 @@ class renderFocalPlane():
 
         # set up the dropdown menu for modes, along with available modes list
         self.menu_modes = [("Full Focal Plane", "Full Focal Plane"), ("FP single raft", "FP single raft"),
-                           ("FP single CCD", "FP single CCD"), ("Solo Raft", "Solo Raft")]
+                           ("FP single CCD", "FP single CCD")]
 
         self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
                                    button_type="success",
@@ -487,7 +487,7 @@ class renderFocalPlane():
         if self.emulate is False:
             if self.full_FP_mode is True:
 #                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
-                raft_list = self.connections["eFP"]["Prod"].focalPlaneContents()
+                raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
                 self.current_FP_raft_list = raft_list
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
@@ -793,9 +793,11 @@ class renderFocalPlane():
                 self.drop_ccd.menu = ccd_menu
                 self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
                 self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                              self.drop_test,
-                                              self.drop_ccd, self.drop_modes), row(self.button,
-                                                                                   self.button_file, self.user_module_input),
+                                                                                      self.drop_test,
+                                                                                      self.drop_ccd,
+                                                                                      self.drop_modes),
+                                          row(self.button,
+                                              self.button_file, self.user_module_input),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -810,34 +812,57 @@ class renderFocalPlane():
                 # _new = self.render(run=self.get_current_run(), testq=self.get_current_test(),box=box)
                 # m_new = layout(self.interactors, l_new)
                 # self.layout.children = m_new.children
-        # in solo mode, ensure run selecton is re-enabled
-        elif new_mode == "Solo Raft":
-            self.solo_raft_mode = True
-            self.emulate = False
-            self.button.label = "Run Mode"
-            self.text_input.title = "Select Run"
-
-            self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                      self.drop_test,
-                                          self.drop_modes), row(self.button, self.button_file, self.user_module_input),
-                                      row(self.test_slider))
-            l_new = self.render()
-            m_new = layout(self.interactors, l_new)
-            self.layout.children = m_new.children
 
         self.drop_modes.label = "Mode: " + new_mode
 
+#   handle the run number box
+
     def update_text_input(self, sattr, old, new):
-        if self.emulate is False:
             self.text_input.title = "Select Run"
             new_run = self.text_input.value
 
-            self.current_run = new_run
+            # figure out what kind of run this is: Full focal plane or single raft
+            self.set_db(run=new_run)
+            run_info = self.connections["connect"][self.dbsel].getRunResults(run=new_run)
+            hw = run_info['experimentSN']
+
+            if "CRYO" in hw.upper():   # full Focal Plane
+                self.full_FP_mode = True
+                self.single_raft_mode = False
+                self.single_ccd_mode = False
+                self.solo_raft_mode = False
+                self.emulate = False
+                self.current_run = new_run
+
+                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
+                                                                                      self.drop_test,
+                                                                                      self.drop_modes),
+                                          row(self.button,
+                                              self.button_file, self.user_module_input),
+                                          row(self.test_slider))
+
+            elif "RTM" in hw:    # single raft test
+                self.solo_raft_mode = True
+                self.single_raft_mode = False
+                self.single_ccd_mode = False
+                self.full_FP_mode = False
+                self.emulate = False
+                self.current_run = new_run
+
+                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
+                                                                                      self.drop_test),
+                                          row(self.button,
+                                              self.button_file, self.user_module_input),
+                                          row(self.test_slider))
+
+            else:   # neither!
+                print("run selected is not Full Focal plane no single raft test")
+
             l_new_run = self.render()
             m_new_run = layout(self.interactors, l_new_run)
             self.layout.children = m_new_run.children
-        else:
-            self.text_input.title = "Select Run Disabled"
+
+            self.current_run = new_run
 
     def update_user_input(self, sattr, old, new):
         mod = __import__(self.user_module_input.value)

@@ -123,7 +123,7 @@ class renderFocalPlane():
         self.drop_ccd.on_change('value', self.update_dropdown_ccd)
 
         # define buttons to toggle emulation mode, and to fetch a config txt file
-        self.button = Button(label="Emulate Mode", button_type="success", width=350)
+        self.button = Button(label="Full Focal Plane", button_type="success", width=350)
         self.button_file = Button(label="Upload Emulation Config", button_type="success", width=350)
 
         # button to terminate app
@@ -177,7 +177,7 @@ class renderFocalPlane():
         self.drop_modes.on_change('value', self.update_dropdown_modes)
         self.text_input.on_change('value', self.update_text_input)
         self.user_module_input.on_change('value', self.update_user_input)
-        self.button.on_click(self.update_button)
+        # self.button.on_click(self.update_button)   # button is just used for mode status
         self.file_source.on_change('data', self.file_callback)
 
         self.heatmap = None
@@ -612,6 +612,9 @@ class renderFocalPlane():
         self.emulate_raft_list = raft_list
         self.current_raft_list = raft_list
 
+        self.button.label = 'Emulate'
+        self.emulate = True
+
         return raft_list, run_list
 
     def get_run(self, raft=None):
@@ -748,7 +751,7 @@ class renderFocalPlane():
         self.full_FP_mode = False
 
         if self.emulate:
-            self.button.label = "Emulate Mode"
+            self.button.label = "Emulation"
         else:
             self.button.label = "Run Mode"
 
@@ -833,6 +836,7 @@ class renderFocalPlane():
                 self.solo_raft_mode = False
                 self.emulate = False
                 self.current_run = new_run
+                self.button.label = 'Full Focal Plane'
 
                 self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
                                                                                       self.drop_test,
@@ -848,6 +852,7 @@ class renderFocalPlane():
                 self.full_FP_mode = False
                 self.emulate = False
                 self.current_run = new_run
+                self.button.label = 'Solo Raft'
 
                 self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
                                                                                       self.drop_test),
@@ -890,6 +895,8 @@ class renderFocalPlane():
         print("Shutting down app")
         sys.exit(0)
 
+# no longer in use
+
     def update_button(self):
         current_mode = self.emulate
         new_mode = not current_mode
@@ -912,6 +919,7 @@ class renderFocalPlane():
         raft_list, run_list = self.parse_emulation_config(filename)
 
         self.set_emulation(config_spec=filename)
+        self.button.label = 'Emulate'
 
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
@@ -930,10 +938,9 @@ class renderFocalPlane():
         enter_time = time.time()
 
         if not self.emulate:
-            self.button.label = 'Run Mode'
             self.text_input.title = "Select Run"
         else:
-            self.button.label = 'Emulate Mode'
+            self.button.label = 'Emulation'
             self.text_input.title = "Select Run Disabled"
 
         raft_list = self.get_raft_content()

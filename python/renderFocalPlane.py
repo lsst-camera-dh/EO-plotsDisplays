@@ -863,6 +863,7 @@ class renderFocalPlane():
             else:   # neither!
                 print("run selected is not Full Focal plane no single raft test")
 
+            self.test_transition = True
             l_new_run = self.render()
             m_new_run = layout(self.interactors, l_new_run)
             self.layout.children = m_new_run.children

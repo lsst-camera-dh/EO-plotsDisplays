@@ -417,7 +417,7 @@ class renderFocalPlane():
                 #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
                 #               self.previous_test)
                 self.current_test = self.menu_test[0][0]
-                self.drop_test.value = self.current_test
+                # self.drop_test.value = self.current_test
                 t = self.test_cache[self.current_run][self.current_test][raft_slot]
                 pass
 
@@ -451,7 +451,7 @@ class renderFocalPlane():
                 #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
                 #               self.previous_test)
                 self.current_test = self.menu_test[0][0]
-                self.drop_test.value = self.current_test
+                # self.drop_test.value = self.current_test
                 t = self.test_cache[self.current_run][self.current_raft][self.current_test]
 
             ccd_name = ""

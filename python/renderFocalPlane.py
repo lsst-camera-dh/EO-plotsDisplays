@@ -671,7 +671,10 @@ class renderFocalPlane():
 
             self.set_db(run=self.current_run)
             # use PROD hardware description due to dev focal plane hardware mismatch
-            raftContents = self.connections["eR"]["Prod"].raftContents(
+            db_k = self.dbsel
+            if not self.emulate:
+                db_k = "Prod"
+            raftContents = self.connections["eR"][db_k].raftContents(
                 raftName=raft_name, run=11974)
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
             self.drop_ccd.menu = ccd_menu
@@ -790,7 +793,10 @@ class renderFocalPlane():
                 #    self.single_raft_name = [raft_list[1]]
                 self.set_db(run=self.current_run)
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
-                raftContents = self.connections["eR"]["Prod"].raftContents(
+                db_k = self.dbsel
+                if not self.emulate:
+                    db_k = "Prod"
+                raftContents = self.connections["eR"][db_k].raftContents(
                     raftName=self.single_raft_name[0][0], run=s11974)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
                 print(ccd_menu)
@@ -1091,7 +1097,10 @@ class renderFocalPlane():
 #                        raftName=self.installed_raft_names[raft],
 #                        run=self.current_run)
                     # Kludge to use prod geometry for dev runs for full focal plane
-                    ccd_list_run = self.connections["eR"]["Prod"].raftContents(
+                    db_k = self.dbsel
+                    if not self.emulate:
+                        db_k = "Prod"
+                    ccd_list_run = self.connections["eR"][db_k].raftContents(
                         raftName=self.installed_raft_names[raft], run=11974)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy

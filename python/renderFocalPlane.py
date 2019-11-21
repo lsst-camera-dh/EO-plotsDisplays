@@ -670,8 +670,9 @@ class renderFocalPlane():
             self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
 
             self.set_db(run=self.current_run)
-            raftContents = self.connections["eR"][self.dbsel].raftContents(
-                raftName=raft_name, run=self.current_run)
+            # use PROD hardware description due to dev focal plane hardware mismatch
+            raftContents = self.connections["eR"]["Prod"].raftContents(
+                raftName=raft_name, run=11974)
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
             self.drop_ccd.menu = ccd_menu
 
@@ -788,8 +789,9 @@ class renderFocalPlane():
                 # if self.single_raft_name == []:
                 #    self.single_raft_name = [raft_list[1]]
                 self.set_db(run=self.current_run)
-                raftContents = self.connections["eR"][self.dbsel].raftContents(
-                    raftName=self.single_raft_name[0][0], run=self.current_run)
+                # use prod hardware definition for full focal plane due to dev geometry mismatch
+                raftContents = self.connections["eR"]["Prod"].raftContents(
+                    raftName=self.single_raft_name[0][0], run=s11974)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
                 print(ccd_menu)
                 self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
@@ -1088,8 +1090,9 @@ class renderFocalPlane():
 #                    ccd_list_run = self.connections["eR"][self.dbsel].raftContents(
 #                        raftName=self.installed_raft_names[raft],
 #                        run=self.current_run)
+                    # Kludge to use prod geometry for dev runs for full focal plane
                     ccd_list_run = self.connections["eR"]["Prod"].raftContents(
-                        raftName=self.installed_raft_names[raft])
+                        raftName=self.installed_raft_names[raft], run=11974)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy
                     r = self.ccd_content_cache.setdefault(self.current_run, {})

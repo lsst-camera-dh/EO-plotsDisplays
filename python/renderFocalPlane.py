@@ -47,6 +47,7 @@ class renderFocalPlane():
 
         self.single_raft_mode = False
         self.single_ccd_mode = False
+        self.solo_ccd_mode = False
         self.solo_raft_mode = False
         self.full_FP_mode = True
         self.solo_corner_raft = False
@@ -76,11 +77,6 @@ class renderFocalPlane():
         self.tap_cb = self.tap_input
         self.select_cb = self.select_input
 
-        #self.source.on_change('selected', self.tap_cb)
-        #self.histsource.on_change('selected', self.select_cb)
-
-
-        # set up run number text box - disable it in emulate mode
         self.text_input = TextInput(value=str(self.get_current_run()), title="Select Run")
 
         self.user_module_input = TextInput(value="", title="User Module")
@@ -95,6 +91,15 @@ class renderFocalPlane():
         self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
                                    button_type="success",
                                    menu=self.menu_modes, width=350)
+        self.drop_modes.on_change('value', self.update_dropdown_modes)
+
+        self.menu_solo_modes = [("Solo raft", "Solo raft"), ("Solo single CCD", "Solo single CCD")]
+
+        self.drop_solo_modes = Dropdown(label="Mode: " + self.menu_solo_modes[self.current_mode][0],
+                                   button_type="success",
+                                   menu=self.menu_solo_modes, width=350)
+
+        self.drop_solo_modes.on_change('value', self.update_dropdown_solo_modes)
 
         # set up the dropdown menu for links, along with available modes list
         self.menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
@@ -174,7 +179,6 @@ class renderFocalPlane():
         self.test_min = 0
         self.test_max = 100
 
-        self.drop_modes.on_change('value', self.update_dropdown_modes)
         self.text_input.on_change('value', self.update_text_input)
         self.user_module_input.on_change('value', self.update_user_input)
         # self.button.on_click(self.update_button)   # button is just used for mode status
@@ -212,8 +216,9 @@ class renderFocalPlane():
         self.drop_test.on_change('value', self.update_dropdown_test)
 
         self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
-                                      self.drop_modes),
-                                  row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
+                                                                              self.drop_modes),
+                                  row(self.button, self.button_file, self.user_module_input),
+                                  row(self.test_slider))
         self.layout = self.interactors
         self.map_layout = self.layout
 
@@ -348,14 +353,14 @@ class renderFocalPlane():
 
         in_time = time.time()
 
-        BOT = not self.solo_raft_mode and not self.emulate
+        BOT = not (self.solo_raft_mode or self.solo_ccd_mode) and not self.emulate
         raft_index = raft_slot
         if not BOT:
             raft_index = self.current_raft
 
         # user override for "User"
         if self.user_hook is not None and self.current_test == "User":
-            if self.single_ccd_mode:
+            if self.single_ccd_mode or self.solo_ccd_mode:
                 ccd_slot = self.single_ccd_name[0][1]
             else:
                 ccd_slot = None
@@ -409,7 +414,7 @@ class renderFocalPlane():
 
         if BOT:
             test_list = [-1.]*len_raft
-            if self.single_ccd_mode:
+            if self.single_ccd_mode or self.solo_ccd_mode:
                 test_list = [-1.] * 16
             try:
                 t = self.test_cache[self.current_run][self.current_test][raft_slot]
@@ -422,7 +427,7 @@ class renderFocalPlane():
                 pass
 
             for ccd in t:
-                if self.single_ccd_mode and ccd != self.single_ccd_name[0][1]:
+                if (self.single_ccd_mode or self.solo_ccd_mode) and ccd != self.single_ccd_name[0][1]:
                     continue
 
                 # calculate offset per sensor into the test q array
@@ -431,7 +436,7 @@ class renderFocalPlane():
                 else:
                     list_idx = 16 * ccd_idx[ccd]
 
-                if self.single_ccd_mode:
+                if self.single_ccd_mode or self.solo_ccd_mode:
                     list_idx = 0
 
                 # kludge for CR - fake 2 guider half-sensors as a single one - assume they arrive in order
@@ -457,13 +462,13 @@ class renderFocalPlane():
             ccd_name = ""
             for ccd in t:
                 # if in single CCD mode, only return that one's quantities
-                if self.single_ccd_mode is True and ccd != self.single_ccd_name[0][0]:
+                if (self.single_ccd_mode or self.solo_ccd_mode) and ccd != self.single_ccd_name[0][0]:
                     continue
                 test_list.extend(t[ccd])
 
         self.testq_timer += time.time() - in_time
 
-        if self.single_ccd_mode:
+        if self.single_ccd_mode or self.solo_ccd_mode:
             if len(test_list) != 16:
                 print("CCD mode - error in length of test quantity list: ", len(test_list))
                 raise ValueError
@@ -496,7 +501,7 @@ class renderFocalPlane():
                 raft_list = [[run_info['experimentSN'], "R22"]]
                 self.single_raft_name = raft_list
             # raft or CCD is on the focal plane; name set by tap_input selection
-            elif self.single_raft_mode is True or self.single_ccd_mode is True:
+            elif self.single_raft_mode or self.solo_ccd_mode:
                 raft_list = self.single_raft_name
         else:
             # use the supplied list of raft info
@@ -666,16 +671,18 @@ class renderFocalPlane():
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
-        if self.single_ccd_mode is True:
+        if self.single_ccd_mode or self.solo_ccd_mode:
             self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
 
             self.set_db(run=self.current_run)
             # use PROD hardware description due to dev focal plane hardware mismatch
             db_k = self.dbsel
+            use_run = self.current_run
             if not self.emulate:
                 db_k = "Prod"
+                use_run = 11974
             raftContents = self.connections["eR"][db_k].raftContents(
-                raftName=raft_name, run=11974)
+                raftName=raft_name, run=use_run)
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
             self.drop_ccd.menu = ccd_menu
 
@@ -794,10 +801,12 @@ class renderFocalPlane():
                 self.set_db(run=self.current_run)
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
+                use_run = self.current_run
                 if not self.emulate:
                     db_k = "Prod"
+                    use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
-                    raftName=self.single_raft_name[0][0], run=s11974)
+                    raftName=self.single_raft_name[0][0], run=use_run)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
                 print(ccd_menu)
                 self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
@@ -807,6 +816,74 @@ class renderFocalPlane():
                                                                                       self.drop_test,
                                                                                       self.drop_ccd,
                                                                                       self.drop_modes),
+                                          row(self.button,
+                                              self.button_file, self.user_module_input),
+                                          row(self.test_slider))
+                l_new = self.render()
+                m_new = layout(self.interactors, l_new)
+                self.layout.children = m_new.children
+            except IndexError:
+                print('Click on a CCD in the heat map.')
+                # box = Label(x=70, y=70, x_units='screen', y_units='screen',
+                #     text='Click on CCD.', render_mode='css',
+                #     border_line_color='black', border_line_alpha=1.0,
+                #     background_fill_color='white', background_fill_alpha=1.0)
+                # nteractors = layout(row(text_input, drop_test, drop_modes), row(button, button_file))
+                # _new = self.render(run=self.get_current_run(), testq=self.get_current_test(),box=box)
+                # m_new = layout(self.interactors, l_new)
+                # self.layout.children = m_new.children
+
+        self.drop_modes.label = "Mode: " + new_mode
+
+    def update_dropdown_solo_modes(self, sattr, old, new):
+        new_mode = self.drop_solo_modes.value
+
+        self.solo_raft_mode = False
+        self.solo_ccd_mode = False
+
+        if self.emulate:
+            self.button.label = "Emulation"
+        else:
+            self.button.label = "Run Mode"
+
+        if new_mode == "Solo raft":
+            try:
+                self.solo_raft_mode = True
+
+                self.interactors = layout(row(self.button_exit, self.drop_links),
+                                          row(self.text_input, self.drop_test, self.drop_solo_modes),
+                                          row(self.button,
+                                              self.button_file,
+                                              self.user_module_input),
+                                          row(self.test_slider))
+                l_new = self.render()
+                m_new = layout(self.interactors, l_new)
+                self.layout.children = m_new.children
+            except Exception:
+                print('Click on a raft in the heat map.')
+        elif new_mode == "Solo single CCD":
+            try:
+                self.solo_ccd_mode = True
+                # if self.single_raft_name == []:
+                #    self.single_raft_name = [raft_list[1]]
+                self.set_db(run=self.current_run)
+                # use prod hardware definition for full focal plane due to dev geometry mismatch
+                db_k = self.dbsel
+                use_run = self.current_run
+                if not self.emulate:
+                    db_k = "Prod"
+                    use_run = 11974
+                raftContents = self.connections["eR"][db_k].raftContents(
+                    raftName=self.single_raft_name[0][0], run=use_run)
+                ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
+                print(ccd_menu)
+                self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
+                self.drop_ccd.menu = ccd_menu
+                self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
+                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
+                                                                                      self.drop_test,
+                                                                                      self.drop_ccd,
+                                                                                      self.drop_solo_modes),
                                           row(self.button,
                                               self.button_file, self.user_module_input),
                                           row(self.test_slider))
@@ -842,6 +919,7 @@ class renderFocalPlane():
                 self.single_raft_mode = False
                 self.single_ccd_mode = False
                 self.solo_raft_mode = False
+                self.solo_ccd_mode = False
                 self.emulate = False
                 self.current_run = new_run
                 self.button.label = 'Full Focal Plane'
@@ -855,6 +933,7 @@ class renderFocalPlane():
 
             elif "RTM" in hw:    # single raft test
                 self.solo_raft_mode = True
+                self.solo_ccd_mode = False
                 self.single_raft_mode = False
                 self.single_ccd_mode = False
                 self.full_FP_mode = False
@@ -862,10 +941,9 @@ class renderFocalPlane():
                 self.current_run = new_run
                 self.button.label = 'Solo Raft'
 
-                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                                                                      self.drop_test),
-                                          row(self.button,
-                                              self.button_file, self.user_module_input),
+                self.interactors = layout(row(self.button_exit, self.drop_links),
+                                          row(self.text_input, self.drop_test, self.drop_solo_modes),
+                                          row(self.button, self.button_file, self.user_module_input),
                                           row(self.test_slider))
 
             else:   # neither!
@@ -970,7 +1048,7 @@ class renderFocalPlane():
 
         if self.single_raft_mode is True or self.solo_raft_mode is True:
             fig_title = self.single_raft_name[0][0] + " Run: " + self.current_run
-        elif self.single_ccd_mode is True:
+        elif self.single_ccd_mode is True or self.solo_ccd_mode is True:
             fig_title = self.single_ccd_name[0][0] + " Run: " + self.current_run
 
         self.heatmap = figure(
@@ -1069,26 +1147,10 @@ class renderFocalPlane():
                 self.current_test = self.previous_test
                 run_data = self.get_testq(raft_slot=raft_slot_current)
 
-            if False:
-                if len(run_data)==144:
-                    run_data = [run_data[i:i + 16] for i in range(0, len(run_data), 16)]
-                elif len(run_data)==48:
-                    run_data = [run_data[i:i + 16] for i in range(0, 32, 16)]+[run_data[i:i + 8] for i in
-                                                                               range(32, 48, 8)]
-                else:
-                    run_data = []
-                if self.solo_corner_raft == True:
-                    run_data = [[run_data[i][j] for j in self.corner_raft_amp_ordering_wave] for i in range(2)]+[[
-                        run_data[i][j] for j in self.corner_raft_amp_ordering_guider] for i in range(2)]
-                else:
-                    run_data = [[ccd_data[j] for j in self.amp_ordering] for ccd_data in run_data]
-
-                run_data = [val for sublist in run_data for val in sublist]
-
             test_q.extend(run_data)
 
             num_ccd = 9
-            if self.single_ccd_mode is False:
+            if not (self.single_ccd_mode or self.solo_ccd_mode):
 
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
@@ -1098,10 +1160,12 @@ class renderFocalPlane():
 #                        run=self.current_run)
                     # Kludge to use prod geometry for dev runs for full focal plane
                     db_k = self.dbsel
+                    use_run = self.current_run
                     if not self.emulate:
                         db_k = "Prod"
+                        use_run = 11974
                     ccd_list_run = self.connections["eR"][db_k].raftContents(
-                        raftName=self.installed_raft_names[raft], run=11974)
+                        raftName=self.installed_raft_names[raft], run=use_run)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy
                     r = self.ccd_content_cache.setdefault(self.current_run, {})

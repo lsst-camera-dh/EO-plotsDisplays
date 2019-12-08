@@ -14,6 +14,11 @@ from bokeh.palettes import Viridis256 as palette #@UnresolvedImport
 from bokeh.layouts import row, layout
 from bokeh.models import CustomJS, ColumnDataSource, CDSView, BooleanFilter
 from bokeh.models.widgets import TextInput, Dropdown, Button, RangeSlider
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+import base64
 
 
 import time
@@ -151,7 +156,8 @@ class renderFocalPlane():
         function load_handler(event) {
             var b64string = event.target.result;
             file_source.data = {'file_contents' : [b64string], 'file_name':[input.files[0].name]};
-            file_source.change.emit();
+            // file_source.change.emit();
+            file_source.trigger("change");
         }
 
         function error_handler(evt) {
@@ -542,7 +548,6 @@ class renderFocalPlane():
         :return: nothing
         """
         self.emulate = True
-
         raft_list, run_list = self.parse_emulation_config(file_spec=config_spec)
 
         self.emulate_raft_list = raft_list
@@ -601,7 +606,7 @@ class renderFocalPlane():
             self.emulate = False
             self.current_mode = 3
 
-    def parse_emulation_config(self, file_spec):
+    def parse_emulation_config(self, file_spec=None):
 
         df = pd.read_csv(file_spec, header=0, skipinitialspace=True)
         raft_frame = df.set_index('raft', drop=False)
@@ -1002,12 +1007,17 @@ class renderFocalPlane():
             self.button.label = 'Run Mode'
             self.text_input.title = "Select Run"
 
+    # handy reference for the callback code: https://github.com/bokeh/bokeh/issues/6096
+
     def file_callback(self, attr, old, new):
         filename = self.file_source.data['file_name'][0]
+        raw_contents = self.file_source.data['file_contents'][0]
+        # remove the prefix that JS adds
+        prefix, b64_contents = raw_contents.split(",", 1)
+        file_contents = base64.b64decode(b64_contents)
+        file_io = StringIO(bytes.decode(file_contents))
 
-        raft_list, run_list = self.parse_emulation_config(filename)
-
-        self.set_emulation(config_spec=filename)
+        self.set_emulation(config_spec=file_io)
         self.button.label = 'Emulate'
 
         l_new_run = self.render()

@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(
     description='Create heatmap of Camera EO test data quantities.')
 
 parser.add_argument('-t', '--test', default="gain", help="test quantity to display")
-parser.add_argument('-r', '--run', default="6654D", help="run number")
+parser.add_argument('-r', '--run', default=None, help="run number")
 parser.add_argument('--hook', default=None, help="name of user hook module to load")
 parser.add_argument('-p', '--png', default=None, help="file spec for output png of heatmap")
 parser.add_argument('-e', '--emulate', default=None, help="file spec for emulation config")
@@ -52,7 +52,10 @@ m_lay = rFP.render()
 if p_args.png is not None:
     export_png(rFP.map_layout, p_args.png)
 
-rFP.layout = layout(rFP.interactors, rFP.map_layout)
+if rFP.map_layout is None:  # handle startup screen case
+    rFP.layout = layout(rFP.interactors)
+else:
+    rFP.layout = layout(rFP.interactors, rFP.map_layout)
 
 curdoc().add_root(rFP.layout)
 curdoc().title = "Focal Plane Heat Map"

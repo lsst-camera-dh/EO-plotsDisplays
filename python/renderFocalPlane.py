@@ -1041,7 +1041,7 @@ class renderFocalPlane():
         if self.startup and not self.emulate and self.current_run is None:
             self.startup = True
             self.interactors = layout(row(self.button_exit, self.drop_links),
-                                      row(self.text_input))
+                                      row(self.text_input), row(self.button, self.button_file))
             self.map_layout = None
 
             return self.interactors

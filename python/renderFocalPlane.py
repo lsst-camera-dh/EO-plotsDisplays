@@ -50,6 +50,7 @@ class renderFocalPlane():
         self.ccd_width = 1.
         self.raft_width = 3.
 
+        self.startup = True
         self.single_raft_mode = False
         self.single_ccd_mode = False
         self.solo_ccd_mode = False
@@ -509,7 +510,7 @@ class renderFocalPlane():
                 raft_list = [[run_info['experimentSN'], "R22"]]
                 self.single_raft_name = raft_list
             # raft or CCD is on the focal plane; name set by tap_input selection
-            elif self.single_raft_mode or self.solo_ccd_mode:
+            elif self.single_raft_mode or self.single_ccd_mode or self.solo_ccd_mode:
                 raft_list = self.single_raft_name
         else:
             # use the supplied list of raft info
@@ -1035,6 +1036,15 @@ class renderFocalPlane():
 
         self.testq_timer = 0
         enter_time = time.time()
+
+        # first time through if user has not specific a run or emmulation
+        if self.startup and not self.emulate and self.current_run is None:
+            self.startup = True
+            self.interactors = layout(row(self.button_exit, self.drop_links),
+                                      row(self.text_input))
+            self.map_layout = None
+
+            return self.interactors
 
         if not self.emulate:
             self.text_input.title = "Select Run"

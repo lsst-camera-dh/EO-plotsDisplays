@@ -501,7 +501,10 @@ class renderFocalPlane():
         if self.emulate is False:
             if self.full_FP_mode is True:
 #                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
-                raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
+                db_k = self.dbsel
+                db_k, use_run = self.kludge_dev_hardware_BOT()
+
+                raft_list = self.connections["eFP"][db_k].focalPlaneContents(run=use_run)
                 self.current_FP_raft_list = raft_list
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
@@ -685,10 +688,8 @@ class renderFocalPlane():
             self.set_db(run=self.current_run)
             # use PROD hardware description due to dev focal plane hardware mismatch
             db_k = self.dbsel
-            use_run = self.current_run
-            if not self.emulate:
-                db_k = "Prod"
-                use_run = 11974
+            db_k, use_run = self.kludge_dev_hardware_BOT()
+
             raftContents = self.connections["eR"][db_k].raftContents(
                 raftName=raft_name, run=use_run)
             ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
@@ -809,10 +810,8 @@ class renderFocalPlane():
                 self.set_db(run=self.current_run)
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
-                use_run = self.current_run
-                if not self.emulate:
-                    db_k = "Prod"
-                    use_run = 11974
+                db_k, use_run = self.kludge_dev_hardware_BOT()
+
                 raftContents = self.connections["eR"][db_k].raftContents(
                     raftName=self.single_raft_name[0][0], run=use_run)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
@@ -877,10 +876,8 @@ class renderFocalPlane():
                 self.set_db(run=self.current_run)
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
-                use_run = self.current_run
-                if not self.emulate:
-                    db_k = "Prod"
-                    use_run = 11974
+                db_k, use_run = self.kludge_dev_hardware_BOT()
+
                 raftContents = self.connections["eR"][db_k].raftContents(
                     raftName=self.single_raft_name[0][0], run=use_run)
                 ccd_menu = [(tup[1] + ': ' + tup[0], tup[0]) for tup in raftContents]
@@ -1024,6 +1021,18 @@ class renderFocalPlane():
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children
+
+    # kludge repair for dev BOT hardware description not updated for 9 raft running.
+    # run 6725D is the first 9-raft run
+
+    def kludge_dev_hardware_BOT(self):
+        db_k = self.dbsel
+        use_run = self.current_run
+        if self.dbsel == "Dev" and not self.emulate and self.full_FP_mode \
+                and int(self.current_run.strip("D")) > 6725:
+            db_k = "Prod"
+            use_run = 11974
+        return db_k, use_run
 
     def render(self, view=None, box=None):
 
@@ -1182,10 +1191,8 @@ class renderFocalPlane():
 #                        run=self.current_run)
                     # Kludge to use prod geometry for dev runs for full focal plane
                     db_k = self.dbsel
-                    use_run = self.current_run
-                    if not self.emulate:
-                        db_k = "Prod"
-                        use_run = 11974
+                    db_k, use_run = self.kludge_dev_hardware_BOT()
+
                     ccd_list_run = self.connections["eR"][db_k].raftContents(
                         raftName=self.installed_raft_names[raft], run=use_run)
                     t_hierarchy = time.time() - t_0_hierarchy

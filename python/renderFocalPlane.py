@@ -1021,6 +1021,10 @@ class renderFocalPlane():
         self.set_emulation(config_spec=file_io)
         self.button.label = 'Emulate'
 
+        self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
+                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
+                                  row(self.test_slider))
+
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children

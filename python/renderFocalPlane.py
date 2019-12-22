@@ -96,14 +96,14 @@ class renderFocalPlane():
 
         self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
                                    button_type="success",
-                                   menu=self.menu_modes, width=350)
+                                   menu=self.menu_modes, width=150)
         self.drop_modes.on_change('value', self.update_dropdown_modes)
 
         self.menu_solo_modes = [("Solo raft", "Solo raft"), ("Solo single CCD", "Solo single CCD")]
 
         self.drop_solo_modes = Dropdown(label="Mode: " + self.menu_solo_modes[self.current_mode][0],
                                    button_type="success",
-                                   menu=self.menu_solo_modes, width=350)
+                                   menu=self.menu_solo_modes, width=150)
 
         self.drop_solo_modes.on_change('value', self.update_dropdown_solo_modes)
 
@@ -123,25 +123,29 @@ class renderFocalPlane():
         self.drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank')""")
 
         self.drop_links = Dropdown(label="Useful Links", button_type="success",
-                                   menu=self.menu_links)
+                                   menu=self.menu_links, width=200)
         self.drop_links.js_on_change('value', self.drop_links_callback)
 
-        self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=350)
+        self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=200)
         self.drop_raft.on_change('value', self.update_dropdown_raft)
 
         self.drop_ccd = Dropdown(label="Select CCD",
-                                 button_type="warning", menu=[], width=350)
+                                 button_type="warning", menu=[], width=200)
         self.drop_ccd.on_change('value', self.update_dropdown_ccd)
 
         # define buttons to toggle emulation mode, and to fetch a config txt file
-        self.button = Button(label="Full Focal Plane", button_type="success", width=350)
-        self.button_file = Button(label="Upload Emulation Config", button_type="success", width=350)
+        self.button = Button(label="Full Focal Plane", button_type="success", width=150)
+        self.button_file = Button(label="Upload Emulation Config", button_type="success", width=150)
 
         # button to terminate app
-        self.button_exit = Button(label="Exit", button_type="danger", width=350)
+        self.button_exit = Button(label="Exit", button_type="danger", width=100)
         self.button_exit.on_click(self.do_exit)
 
-        # readining in the emulation config file depends on two callbacks - one triggering reading the
+        # button to clear test cache
+        self.button_clear_cache = Button(label="Clear Cache", button_type="danger", width=100)
+        self.button_clear_cache.on_click(self.update_clear_cache)
+
+        # reading in the emulation config file depends on two callbacks - one triggering reading the
         # file into the ColumnDataSource, coupled with looking for a change on the ColumnDataSource
         self.file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
 
@@ -221,11 +225,11 @@ class renderFocalPlane():
         self.menu_test_cache = {}
 
         # drop down menu of test names, taking the menu from self.menu_test
-        self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=350)
+        self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=150)
         self.drop_test.on_change('value', self.update_dropdown_test)
 
-        self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
-                                                                              self.drop_modes),
+        self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                  row(self.text_input, self.drop_test,self.drop_modes),
                                   row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
         self.layout = self.interactors
@@ -670,11 +674,13 @@ class renderFocalPlane():
         if self.single_raft_mode is True:
             raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_FP_raft_list]
             self.drop_raft.menu = raft_menu
-            self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                                                                  self.drop_test,
-                                                                                  self.drop_raft,
-                                                                                  self.drop_modes),
-                                      row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
+            self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                      row(self.text_input,
+                                          self.drop_test,
+                                          self.drop_raft,
+                                          self.drop_modes),
+                                      row(self.button, self.button_file, self.user_module_input),
+                                      row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -695,7 +701,7 @@ class renderFocalPlane():
             self.drop_ccd.menu = ccd_menu
 
             self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
-            self.interactors = layout(row(self.button_exit, self.drop_links),
+            self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                           row(self.text_input, self.drop_test, self.drop_ccd,
                                           self.drop_modes),
                                       row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
@@ -737,9 +743,11 @@ class renderFocalPlane():
         ccd_name = self.drop_ccd.value
         ccd_slot = self.slot_mapping[ccd_name]
         self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
-        self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
+        self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                  row(self.text_input, self.drop_test,
                                       self.drop_ccd,
-                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
+                                      self.drop_modes),
+                                  row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -753,9 +761,11 @@ class renderFocalPlane():
         #self.drop_raft.menu = []
         self.single_raft_name = [[raft_name, raft_slot]]
         self.current_raft = raft_name
-        self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
+        self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                  row(self.text_input, self.drop_test,
                                       self.drop_raft,
-                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
+                                      self.drop_modes),
+                                  row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -776,10 +786,12 @@ class renderFocalPlane():
 
         if new_mode == "Full Focal Plane":
             self.full_FP_mode = True
-            self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                      self.drop_test,
+            self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                      row(self.text_input,
+                                          self.drop_test,
                                           self.drop_modes),
-                                      row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
+                                      row(self.button, self.button_file, self.user_module_input),
+                                      row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -790,10 +802,12 @@ class renderFocalPlane():
                 raft_menu = [(pair[1] + " : " + pair[0], pair[0]) for pair in self.current_FP_raft_list]
                 self.drop_raft.label = "Select Raft"
                 self.drop_raft.menu = raft_menu
-                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
+                self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                          row(self.text_input,
                                               self.drop_test,
                                               self.drop_raft, self.drop_modes), row(self.button,
-                                                                                    self.button_file, self.user_module_input),
+                                                                                    self.button_file,
+                                                                                    self.user_module_input),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -820,10 +834,11 @@ class renderFocalPlane():
                 self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
                 self.drop_ccd.menu = ccd_menu
                 self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
-                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                                                                      self.drop_test,
-                                                                                      self.drop_ccd,
-                                                                                      self.drop_modes),
+                self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                          row(self.text_input,
+                                              self.drop_test,
+                                              self.drop_ccd,
+                                              self.drop_modes),
                                           row(self.button,
                                               self.button_file, self.user_module_input),
                                           row(self.test_slider))
@@ -858,7 +873,7 @@ class renderFocalPlane():
             try:
                 self.solo_raft_mode = True
 
-                self.interactors = layout(row(self.button_exit, self.drop_links),
+                self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                           row(self.text_input, self.drop_test, self.drop_solo_modes),
                                           row(self.button,
                                               self.button_file,
@@ -888,10 +903,11 @@ class renderFocalPlane():
                 self.drop_ccd.label = "Select CCD from " + self.single_raft_name[0][0][-7:]
                 self.drop_ccd.menu = ccd_menu
                 self.slot_mapping = {tup[0]: tup[1] for tup in raftContents}
-                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                                                                      self.drop_test,
-                                                                                      self.drop_ccd,
-                                                                                      self.drop_solo_modes),
+                self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                          row(self.text_input,
+                                              self.drop_test,
+                                              self.drop_ccd,
+                                              self.drop_solo_modes),
                                           row(self.button,
                                               self.button_file, self.user_module_input),
                                           row(self.test_slider))
@@ -932,9 +948,10 @@ class renderFocalPlane():
                 self.current_run = new_run
                 self.button.label = 'Full Focal Plane'
 
-                self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input,
-                                                                                      self.drop_test,
-                                                                                      self.drop_modes),
+                self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                          row(self.text_input,
+                                              self.drop_test,
+                                              self.drop_modes),
                                           row(self.button,
                                               self.button_file, self.user_module_input),
                                           row(self.test_slider))
@@ -949,7 +966,7 @@ class renderFocalPlane():
                 self.current_run = new_run
                 self.button.label = 'Solo Raft'
 
-                self.interactors = layout(row(self.button_exit, self.drop_links),
+                self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                           row(self.text_input, self.drop_test, self.drop_solo_modes),
                                           row(self.button, self.button_file, self.user_module_input),
                                           row(self.test_slider))
@@ -979,10 +996,6 @@ class renderFocalPlane():
         self.test_max = self.test_slider.value[1]
 
         l_new_run = self.render()
-        self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
-                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
-                                  row(self.test_slider))
-
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children
 
@@ -1021,13 +1034,23 @@ class renderFocalPlane():
         self.set_emulation(config_spec=file_io)
         self.button.label = 'Emulate'
 
-        self.interactors = layout(row(self.button_exit, self.drop_links), row(self.text_input, self.drop_test,
-                                      self.drop_modes), row(self.button, self.button_file, self.user_module_input),
+        self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
+                                  row(self.text_input, self.drop_test,
+                                      self.drop_modes),
+                                  row(self.button, self.button_file, self.user_module_input),
                                   row(self.test_slider))
 
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children
+
+    def update_clear_cache(self):
+        self.test_cache = {}
+        l_new_run = self.render()
+        m_new_run = layout(self.interactors, l_new_run)
+        self.layout.children = m_new_run.children
+
+        print("Cleared test cache")
 
     def render(self, view=None, box=None):
 

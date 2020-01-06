@@ -2,6 +2,7 @@ from __future__ import print_function
 import numpy as np
 import pandas as pd
 import sys
+import importlib
 from get_EO_analysis_results import get_EO_analysis_results
 from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
@@ -983,6 +984,8 @@ class renderFocalPlane():
 
     def update_user_input(self, sattr, old, new):
         mod = __import__(self.user_module_input.value)
+        if self.user_hook is not None:
+            importlib.reload(mod)
         self.user_hook = mod.hook
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)

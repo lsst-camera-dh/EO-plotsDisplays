@@ -1350,7 +1350,7 @@ class renderFocalPlane():
             hi_val = self.test_slider.value[1]
 
         np_array = np.array(test_q)
-        selected_q = [q for q in np_array if lo_val <= q < hi_val]
+        selected_q = [q for q in np_array if lo_val <= q <= hi_val]
         h_q, bins = np.histogram(selected_q, bins=50)
         self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q, left=bins[:-1], right=bins[1:])))
         # Using numpy to get the index of the bins to which the value is assigned

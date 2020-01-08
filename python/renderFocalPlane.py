@@ -983,7 +983,7 @@ class renderFocalPlane():
             self.current_run = new_run
 
     def update_user_input(self, sattr, old, new):
-        mod = __import__(self.user_module_input.value)
+        mod = __import__(self.user_module_input.value_input)
         if self.user_hook is not None:
             importlib.reload(mod)
         self.user_hook = mod.hook
@@ -1338,7 +1338,7 @@ class renderFocalPlane():
 
         heat_map_done_time = time.time() - enter_time
 
-        if self.test_transition:
+        if self.test_transition or self.current_test == "User":
             lo_val = min(test_q)
             hi_val = max(test_q)
             self.test_slider.value = (lo_val, hi_val)

@@ -1061,6 +1061,7 @@ class renderFocalPlane():
             self.user_module = __import__(name, fromlist=["init", "hook"])
 
         self.user_hook = self.user_module.hook
+        self.test_transition = True
         try:
             print("calling user init")
             mod_init = self.user_module.init
@@ -1401,7 +1402,7 @@ class renderFocalPlane():
 
         heat_map_done_time = time.time() - enter_time
 
-        if self.test_transition or self.current_test == "User":
+        if self.test_transition:
             lo_val = min(test_q)
             hi_val = max(test_q)
             self.test_slider.value = (lo_val, hi_val)

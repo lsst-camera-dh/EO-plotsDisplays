@@ -758,7 +758,7 @@ class renderFocalPlane():
 
     def update_dropdown_user_test(self, sattr, old, new):
         new_test = self.drop_user_test.value
-        self.drop_user_test.label = "Test" + new_test
+        self.drop_user_test.label = "Test: " + new_test
         self.test_transition = True
 
         self.previous_test = self.current_test
@@ -766,7 +766,6 @@ class renderFocalPlane():
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
-
 
     def update_dropdown_ccd(self, sattr, old, new):
         ccd_name = self.drop_ccd.value

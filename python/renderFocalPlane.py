@@ -747,7 +747,7 @@ class renderFocalPlane():
 
     def update_dropdown_test(self, sattr, old, new):
         new_test = self.drop_test.value
-        self.drop_test.label = "Test" + new_test
+        self.drop_test.label = "Test: " + new_test
         self.test_transition = True
 
         self.previous_test = self.current_test

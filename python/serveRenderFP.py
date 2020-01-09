@@ -44,8 +44,8 @@ rFP.current_test = p_args.test
 rFP.set_mode(p_args.mode)
 
 if p_args.hook is not None:
-    mod = __import__(p_args.hook)
-    rFP.user_hook = mod.hook
+    rFP.user_module = __import__(p_args.hook)
+    rFP.user_hook = rFP.user_module.hook
 
 m_lay = rFP.render()
 

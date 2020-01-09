@@ -81,6 +81,7 @@ class renderFocalPlane():
         self.current_FP_raft_list = []
 
         self.user_hook = None
+        self.user_module = None
         self.tap_cb = self.tap_input
         self.select_cb = self.select_input
 
@@ -141,6 +142,10 @@ class renderFocalPlane():
         # button to terminate app
         self.button_exit = Button(label="Exit", button_type="danger", width=100)
         self.button_exit.on_click(self.do_exit)
+
+        # button to reload user module
+        self.button_reload = Button(label="Reload", button_type="warning", width=100)
+        self.button_reload.on_click(self.do_reload)
 
         # button to clear test cache
         self.button_clear_cache = Button(label="Clear Cache", button_type="danger", width=100)
@@ -231,7 +236,8 @@ class renderFocalPlane():
 
         self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                   row(self.text_input, self.drop_test,self.drop_modes),
-                                  row(self.button, self.button_file, self.user_module_input),
+                                  row(self.button, self.button_file, self.user_module_input,
+                                  self.button_reload),
                                   row(self.test_slider))
         self.layout = self.interactors
         self.map_layout = self.layout
@@ -680,7 +686,8 @@ class renderFocalPlane():
                                           self.drop_test,
                                           self.drop_raft,
                                           self.drop_modes),
-                                      row(self.button, self.button_file, self.user_module_input),
+                                      row(self.button, self.button_file, self.user_module_input,
+                                          self.button_reload),
                                       row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -705,7 +712,9 @@ class renderFocalPlane():
             self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                           row(self.text_input, self.drop_test, self.drop_ccd,
                                           self.drop_modes),
-                                      row(self.button, self.button_file, self.user_module_input), row(self.test_slider))
+                                      row(self.button, self.button_file, self.user_module_input,
+                                          self.button_reload),
+                                      row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -748,7 +757,8 @@ class renderFocalPlane():
                                   row(self.text_input, self.drop_test,
                                       self.drop_ccd,
                                       self.drop_modes),
-                                  row(self.button, self.button_file, self.user_module_input),
+                                  row(self.button, self.button_file, self.user_module_input,
+                                      self.button_reload),
                                   row(self.test_slider))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -766,7 +776,8 @@ class renderFocalPlane():
                                   row(self.text_input, self.drop_test,
                                       self.drop_raft,
                                       self.drop_modes),
-                                  row(self.button, self.button_file, self.user_module_input),
+                                  row(self.button, self.button_file, self.user_module_input,
+                                      self.button_reload),
                                   row(self.test_slider))
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
@@ -791,7 +802,8 @@ class renderFocalPlane():
                                       row(self.text_input,
                                           self.drop_test,
                                           self.drop_modes),
-                                      row(self.button, self.button_file, self.user_module_input),
+                                      row(self.button, self.button_file, self.user_module_input,
+                                          self.button_reload),
                                       row(self.test_slider))
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
@@ -806,9 +818,11 @@ class renderFocalPlane():
                 self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                           row(self.text_input,
                                               self.drop_test,
-                                              self.drop_raft, self.drop_modes), row(self.button,
-                                                                                    self.button_file,
-                                                                                    self.user_module_input),
+                                              self.drop_raft, self.drop_modes),
+                                          row(self.button,
+                                              self.button_file,
+                                              self.user_module_input,
+                                              self.button_reload),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -841,7 +855,7 @@ class renderFocalPlane():
                                               self.drop_ccd,
                                               self.drop_modes),
                                           row(self.button,
-                                              self.button_file, self.user_module_input),
+                                              self.button_file, self.user_module_input, self.button_reload),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -878,7 +892,7 @@ class renderFocalPlane():
                                           row(self.text_input, self.drop_test, self.drop_solo_modes),
                                           row(self.button,
                                               self.button_file,
-                                              self.user_module_input),
+                                              self.user_module_input, self.button_reload),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -910,7 +924,7 @@ class renderFocalPlane():
                                               self.drop_ccd,
                                               self.drop_solo_modes),
                                           row(self.button,
-                                              self.button_file, self.user_module_input),
+                                              self.button_file, self.user_module_input, self.button_reload),
                                           row(self.test_slider))
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
@@ -954,7 +968,7 @@ class renderFocalPlane():
                                               self.drop_test,
                                               self.drop_modes),
                                           row(self.button,
-                                              self.button_file, self.user_module_input),
+                                              self.button_file, self.user_module_input, self.button_reload),
                                           row(self.test_slider))
 
             elif "RTM" in hw:    # single raft test
@@ -969,7 +983,8 @@ class renderFocalPlane():
 
                 self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                           row(self.text_input, self.drop_test, self.drop_solo_modes),
-                                          row(self.button, self.button_file, self.user_module_input),
+                                          row(self.button, self.button_file, self.user_module_input,
+                                              self.button_reload),
                                           row(self.test_slider))
 
             else:   # neither!
@@ -983,10 +998,10 @@ class renderFocalPlane():
             self.current_run = new_run
 
     def update_user_input(self, sattr, old, new):
-        mod = __import__(self.user_module_input.value_input)
+        self.user_module = __import__(self.user_module_input.value_input)
         if self.user_hook is not None:
-            importlib.reload(mod)
-        self.user_hook = mod.hook
+            importlib.reload(self.user_module)
+        self.user_hook = self.user_module.hook
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children
@@ -1006,7 +1021,17 @@ class renderFocalPlane():
         print("Shutting down app")
         sys.exit(0)
 
-# no longer in use
+    def do_reload(self):
+        if self.user_module_input is not None:
+            print("Reloading ", self.user_hook)
+            importlib.reload(self.user_module)
+            self.user_hook = self.user_module.hook
+
+            l_new_run = self.render()
+            m_new_run = layout(self.interactors, l_new_run)
+            self.layout.children = m_new_run.children
+
+    # no longer in use
 
     def update_button(self):
         current_mode = self.emulate
@@ -1040,7 +1065,8 @@ class renderFocalPlane():
         self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                   row(self.text_input, self.drop_test,
                                       self.drop_modes),
-                                  row(self.button, self.button_file, self.user_module_input),
+                                  row(self.button, self.button_file, self.user_module_input,
+                                  self.button_reload),
                                   row(self.test_slider))
 
         l_new_run = self.render()

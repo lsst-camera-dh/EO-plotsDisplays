@@ -198,6 +198,15 @@ class renderFocalPlane():
         self.test_min = 0
         self.test_max = 100
 
+        self.slider_min = TextInput(value="", title="Slider Min")
+        self.slider_min.on_change('value', self.update_slider_min)
+        self.slider_max = TextInput(value="", title="Slider Max")
+        self.slider_max.on_change('value', self.update_slider_max)
+        self.slider_lims_reset = Button(label="Slider Reset", button_type="danger", width=100)
+        self.slider_lims_reset.on_click(self.do_slider_lims_reset)
+
+        self.slider_limits = {"min": 0, "max": 100, "state": False}
+
         self.text_input.on_change('value', self.update_text_input)
         self.user_module_input.on_change('value', self.update_user_input)
         # self.button.on_click(self.update_button)   # button is just used for mode status
@@ -240,11 +249,13 @@ class renderFocalPlane():
                                        menu=self.menu_user_test, width=150)
         self.drop_user_test.on_change('value', self.update_dropdown_user_test)
 
+        self.interactors_range = row(self.slider_min, self.slider_max, self.slider_lims_reset)
+
         self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
                                   row(self.text_input, self.drop_test,self.drop_modes),
                                   row(self.button, self.button_file, self.user_module_input,
                                   self.button_reload, self.drop_user_test),
-                                  row(self.test_slider))
+                                  row(self.test_slider), self.interactors_range)
         self.layout = self.interactors
         self.map_layout = self.layout
 
@@ -394,7 +405,8 @@ class renderFocalPlane():
                     self.solo_corner_raft = True
 
             return self.user_hook(run=self.current_run, mode=self.current_mode, raft=raft_slot,
-                                  ccd=ccd_slot, test_cache=self.test_cache, test=self.current_test)
+                                  ccd=ccd_slot, test_cache=self.test_cache, test=self.current_test,
+                                  range_limits=self.slider_limits)
 
         if BOT:
             if self.current_run not in self.test_cache or raft_index not in \
@@ -694,7 +706,7 @@ class renderFocalPlane():
                                           self.drop_modes),
                                       row(self.button, self.button_file, self.user_module_input,
                                           self.button_reload, self.drop_user_test),
-                                      row(self.test_slider))
+                                      row(self.test_slider), self.interactors_range)
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -720,7 +732,7 @@ class renderFocalPlane():
                                           self.drop_modes),
                                       row(self.button, self.button_file, self.user_module_input,
                                           self.button_reload, self.drop_user_test),
-                                      row(self.test_slider))
+                                      row(self.test_slider), self.interactors_range)
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -749,6 +761,7 @@ class renderFocalPlane():
         new_test = self.drop_test.value
         self.drop_test.label = "Test: " + new_test
         self.test_transition = True
+        self.slider_limits["state"] = False
 
         self.previous_test = self.current_test
         self.current_test = new_test
@@ -777,7 +790,7 @@ class renderFocalPlane():
                                       self.drop_modes),
                                   row(self.button, self.button_file, self.user_module_input,
                                       self.button_reload, self.drop_user_test),
-                                  row(self.test_slider))
+                                  row(self.test_slider), self.interactors_range)
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
@@ -796,7 +809,7 @@ class renderFocalPlane():
                                       self.drop_modes),
                                   row(self.button, self.button_file, self.user_module_input,
                                       self.button_reload, self.drop_user_test),
-                                  row(self.test_slider))
+                                  row(self.test_slider), self.interactors_range)
         l_new = self.render()
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
@@ -822,7 +835,7 @@ class renderFocalPlane():
                                           self.drop_modes),
                                       row(self.button, self.button_file, self.user_module_input,
                                           self.button_reload, self.drop_user_test),
-                                      row(self.test_slider))
+                                      row(self.test_slider), self.interactors_range)
             l_new = self.render()
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
@@ -841,7 +854,7 @@ class renderFocalPlane():
                                               self.button_file,
                                               self.user_module_input,
                                               self.button_reload, self.drop_user_test),
-                                          row(self.test_slider))
+                                          row(self.test_slider), self.interactors_range)
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
                 self.layout.children = m_new.children
@@ -875,7 +888,7 @@ class renderFocalPlane():
                                           row(self.button,
                                               self.button_file, self.user_module_input,
                                               self.button_reload, self.drop_user_test),
-                                          row(self.test_slider))
+                                          row(self.test_slider), self.interactors_range)
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
                 self.layout.children = m_new.children
@@ -912,7 +925,7 @@ class renderFocalPlane():
                                           row(self.button,
                                               self.button_file,
                                               self.user_module_input, self.button_reload, self.drop_user_test),
-                                          row(self.test_slider))
+                                          row(self.test_slider), self.interactors_range)
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
                 self.layout.children = m_new.children
@@ -945,7 +958,7 @@ class renderFocalPlane():
                                           row(self.button,
                                               self.button_file, self.user_module_input,
                                               self.button_reload, self.drop_user_test),
-                                          row(self.test_slider))
+                                          row(self.test_slider), self.interactors_range)
                 l_new = self.render()
                 m_new = layout(self.interactors, l_new)
                 self.layout.children = m_new.children
@@ -990,7 +1003,7 @@ class renderFocalPlane():
                                           row(self.button,
                                               self.button_file, self.user_module_input,
                                               self.button_reload, self.drop_user_test),
-                                          row(self.test_slider))
+                                          row(self.test_slider), self.interactors_range)
 
             elif "RTM" in hw:    # single raft test
                 self.solo_raft_mode = True
@@ -1006,7 +1019,7 @@ class renderFocalPlane():
                                           row(self.text_input, self.drop_test, self.drop_solo_modes),
                                           row(self.button, self.button_file, self.user_module_input,
                                               self.button_reload, self.drop_user_test),
-                                          row(self.test_slider))
+                                          row(self.test_slider), self.interactors_range)
 
             else:   # neither!
                 print("run selected is not Full Focal plane no single raft test")
@@ -1031,6 +1044,40 @@ class renderFocalPlane():
         self.test_min = self.test_slider.value[0]
         self.test_max = self.test_slider.value[1]
 
+        self.slider_limits["state"] = False
+        self.slider_min.value = ""
+        self.slider_max.value = ""
+
+        l_new_run = self.render()
+        m_new_run = layout(self.interactors, l_new_run)
+        self.layout.children = m_new_run.children
+
+    def update_slider_min(self, sattr, old, new):
+        min = self.slider_min.value_input
+        if self.slider_min.value == "":  # value reset by slider - bail here
+            return
+        self.slider_limits["state"] = True
+        self.slider_limits["min"] = float(min)
+
+        l_new_run = self.render()
+        m_new_run = layout(self.interactors, l_new_run)
+        self.layout.children = m_new_run.children
+
+    def update_slider_max(self, sattr, old, new):
+        max = self.slider_max.value_input
+        if self.slider_max.value == "":  # value reset by slider - bail here
+            return
+        self.slider_limits["state"] = True
+        self.slider_limits["max"] = float(max)
+
+        l_new_run = self.render()
+        m_new_run = layout(self.interactors, l_new_run)
+        self.layout.children = m_new_run.children
+
+    def do_slider_lims_reset(self):
+        self.slider_limits["state"] = False
+        self.test_transition = True
+
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
         self.layout.children = m_new_run.children
@@ -1054,6 +1101,8 @@ class renderFocalPlane():
 
     def load_user_module(self, name=None):
 
+        bail = False
+
         if self.user_hook is not None:
             importlib.reload(self.user_module)
         else:
@@ -1065,8 +1114,14 @@ class renderFocalPlane():
             print("calling user init")
             mod_init = self.user_module.init
             rc = mod_init(menu_button=self.drop_user_test)
-        except:
+            #if self.current_test not in self.drop_user_test.menu:
+            #    bail = True
+        except AttributeError:
             pass
+
+        if bail:
+            print("test name supplied not in user-defined menu, Shutting down")
+            sys.exit(0)
 
     # no longer in use
 
@@ -1104,7 +1159,7 @@ class renderFocalPlane():
                                       self.drop_modes),
                                   row(self.button, self.button_file, self.user_module_input,
                                   self.button_reload, self.drop_user_test),
-                                  row(self.test_slider))
+                                  row(self.test_slider), self.interactors_range)
 
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
@@ -1404,13 +1459,28 @@ class renderFocalPlane():
         if self.test_transition:
             lo_val = min(test_q)
             hi_val = max(test_q)
+            if self.slider_limits["state"] and "user" in self.current_test.lower():
+                lo_val = self.slider_limits["min"]
+                hi_val = self.slider_limits["max"]
+
             self.test_slider.value = (lo_val, hi_val)
             self.test_slider.end = hi_val
             self.test_slider.step = (hi_val - lo_val)/500.
             self.test_transition = False
+            self.slider_min.value = ""
+            self.slider_max.value = ""
+        elif self.slider_limits["state"]:
+            lo_val = self.slider_limits["min"]
+            hi_val = self.slider_limits["max"]
+            self.test_slider.value = (lo_val, hi_val)
+            self.test_slider.end = hi_val
+            self.test_slider.step = (hi_val - lo_val) / 500.
         else:
             lo_val = self.test_slider.value[0]
             hi_val = self.test_slider.value[1]
+
+        self.slider_limits["min"] = lo_val
+        self.slider_limits["max"] = hi_val
 
         np_array = np.array(test_q)
         selected_q = [q for q in np_array if lo_val <= q <= hi_val]

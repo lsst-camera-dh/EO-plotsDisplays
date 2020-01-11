@@ -1043,6 +1043,7 @@ class renderFocalPlane():
     def test_slider_select(self, sattr, old, new):
         self.test_min = self.test_slider.value[0]
         self.test_max = self.test_slider.value[1]
+        self.slider_limits["state"] = False
 
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)

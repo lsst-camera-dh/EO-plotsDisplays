@@ -1043,7 +1043,10 @@ class renderFocalPlane():
     def test_slider_select(self, sattr, old, new):
         self.test_min = self.test_slider.value[0]
         self.test_max = self.test_slider.value[1]
+
         self.slider_limits["state"] = False
+        self.slider_min.value = ""
+        self.slider_max.value = ""
 
         l_new_run = self.render()
         m_new_run = layout(self.interactors, l_new_run)
@@ -1051,6 +1054,8 @@ class renderFocalPlane():
 
     def update_slider_min(self, sattr, old, new):
         min = self.slider_min.value_input
+        if self.slider_min.value == "":  # value reset by slider - bail here
+            return
         self.slider_limits["state"] = True
         self.slider_limits["min"] = float(min)
 
@@ -1060,6 +1065,8 @@ class renderFocalPlane():
 
     def update_slider_max(self, sattr, old, new):
         max = self.slider_max.value_input
+        if self.slider_max.value == "":  # value reset by slider - bail here
+            return
         self.slider_limits["state"] = True
         self.slider_limits["max"] = float(max)
 
@@ -1455,10 +1462,13 @@ class renderFocalPlane():
             if self.slider_limits["state"] and "user" in self.current_test.lower():
                 lo_val = self.slider_limits["min"]
                 hi_val = self.slider_limits["max"]
+
             self.test_slider.value = (lo_val, hi_val)
             self.test_slider.end = hi_val
             self.test_slider.step = (hi_val - lo_val)/500.
             self.test_transition = False
+            self.slider_min.value = ""
+            self.slider_max.value = ""
         elif self.slider_limits["state"]:
             lo_val = self.slider_limits["min"]
             hi_val = self.slider_limits["max"]

@@ -1045,6 +1045,9 @@ class renderFocalPlane():
         self.test_max = self.test_slider.value[1]
 
         self.slider_limits["state"] = False
+        self.slider_limits["min"] = float(self.test_min)
+        self.slider_limits["max"] = float(self.test_max)
+
         self.slider_min.value = ""
         self.slider_max.value = ""
 

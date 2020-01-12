@@ -12,6 +12,11 @@ def init(menu_button=None):
     return 0
 
 
+print("user hook setting global variables")
+save_lo = -999.
+save_hi = -999.
+
+
 def hook(run=None, mode=None, raft=None, ccd=None, test_cache=None, test=None, range_limits=None):
     """
     User hook for test quantity
@@ -21,6 +26,8 @@ def hook(run=None, mode=None, raft=None, ccd=None, test_cache=None, test=None, r
 # SW0 and SW1 only use 0-7 for resukts. Arrange the indexes to overwrite the back half of
 # SW0 with the front half of SW1
 
+    global save_hi
+    global save_lo
 
     s = {"SG0":0, "SG1":16, "SW0":32, "SW1":40,
                   "S00":0, "S01":16, "S02":32, "S10":48,
@@ -49,8 +56,13 @@ def hook(run=None, mode=None, raft=None, ccd=None, test_cache=None, test=None, r
             out_list[amp + slot_index[ccd]] = val
             amp += 1
 
-    range_limits["min"] = 5.
-    range_limits["max"] = 20.
-    range_limits["state"] = True
+    if save_lo == -999.:
+        save_hi = range_limits["max"]
+        save_lo = range_limits["min"]
+
+    if save_hi == range_limits["max"] and save_lo == range_limits["min"]:
+        range_limits["min"] = 5.
+        range_limits["max"] = 20.
+        range_limits["state"] = True
 
     return out_list

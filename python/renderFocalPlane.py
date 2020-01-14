@@ -1461,6 +1461,8 @@ class renderFocalPlane():
 
         test_lo = min(test_q)
         test_hi = max(test_q)
+        self.test_slider.end = test_hi
+        self.test_slider.start = test_lo
 
         if self.test_transition:
             lo_val = test_lo

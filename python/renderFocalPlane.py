@@ -1479,14 +1479,13 @@ class renderFocalPlane():
         elif self.slider_limits["state"]:
             lo_val = self.slider_limits["min"]
             hi_val = self.slider_limits["max"]
+            self.test_slider.end = hi_val
+            self.test_slider.start = lo_val
             self.test_slider.value = (lo_val, hi_val)
             self.test_slider.step = (hi_val - lo_val) / 500.
         else:
             lo_val = self.test_slider.value[0]
             hi_val = self.test_slider.value[1]
-
-        self.test_slider.end = hi_val
-        self.test_slider.start = lo_val
 
         np_array = np.array(test_q)
         selected_q = [q for q in np_array if lo_val <= q <= hi_val]

@@ -1459,15 +1459,19 @@ class renderFocalPlane():
 
         heat_map_done_time = time.time() - enter_time
 
+        test_lo = min(test_q)
+        test_hi = max(test_q)
+        self.test_slider.end = test_hi
+        self.test_slider.start = test_lo
+
         if self.test_transition:
-            lo_val = min(test_q)
-            hi_val = max(test_q)
+            lo_val = test_lo
+            hi_val = test_hi
             if self.slider_limits["state"] and "user" in self.current_test.lower():
                 lo_val = self.slider_limits["min"]
                 hi_val = self.slider_limits["max"]
 
             self.test_slider.value = (lo_val, hi_val)
-            self.test_slider.end = hi_val
             self.test_slider.step = (hi_val - lo_val)/500.
             self.test_transition = False
             self.slider_min.value = ""
@@ -1476,7 +1480,6 @@ class renderFocalPlane():
             lo_val = self.slider_limits["min"]
             hi_val = self.slider_limits["max"]
             self.test_slider.value = (lo_val, hi_val)
-            self.test_slider.end = hi_val
             self.test_slider.step = (hi_val - lo_val) / 500.
         else:
             lo_val = self.test_slider.value[0]
@@ -1487,7 +1490,7 @@ class renderFocalPlane():
 
         np_array = np.array(test_q)
         selected_q = [q for q in np_array if lo_val <= q <= hi_val]
-        h_q, bins = np.histogram(selected_q, bins=50)
+        h_q, bins = np.histogram(selected_q, bins=50, range=(lo_val, hi_val))
         self.histsource = ColumnDataSource(pd.DataFrame(dict(top=h_q, left=bins[:-1], right=bins[1:])))
         # Using numpy to get the index of the bins to which the value is assigned
         h = figure(title=self.current_test, tools=TOOLS, toolbar_location="below")

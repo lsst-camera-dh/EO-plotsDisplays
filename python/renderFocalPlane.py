@@ -1461,15 +1461,24 @@ class renderFocalPlane():
 
         test_lo = min(test_q)
         test_hi = max(test_q)
-        self.test_slider.end = test_hi
-        self.test_slider.start = test_lo
+        #self.test_slider.end = test_hi
+        #self.test_slider.start = test_lo
 
+        #print("0 ", self.slider_limits, self.test_transition, self.test_slider.start, self.test_slider.end,
+        #      self.test_slider.value)
         if self.test_transition:
+            #print("1 ", self.slider_limits, self.test_transition, self.test_slider.start, self.test_slider.end,
+            #      self.test_slider.value)
             lo_val = test_lo
             hi_val = test_hi
-            if self.slider_limits["state"] and "user" in self.current_test.lower():
-                lo_val = self.slider_limits["min"]
-                hi_val = self.slider_limits["max"]
+
+            if "user" in self.current_test.lower():
+                if self.slider_limits["state"]:
+                    lo_val = self.slider_limits["min"]
+                    hi_val = self.slider_limits["max"]
+                else:
+                    self.test_slider.end = test_hi
+                    self.test_slider.start = test_lo
 
             self.slider_limits["min"] = lo_val
             self.slider_limits["max"] = hi_val
@@ -1479,6 +1488,8 @@ class renderFocalPlane():
             self.slider_min.value = ""
             self.slider_max.value = ""
         elif self.slider_limits["state"]:
+            #print("2 ", self.slider_limits, self.test_transition, self.test_slider.start, self.test_slider.end,
+            #      self.test_slider.value)
             lo_val = self.slider_limits["min"]
             hi_val = self.slider_limits["max"]
             self.test_slider.end = hi_val
@@ -1486,9 +1497,13 @@ class renderFocalPlane():
             self.test_slider.value = (lo_val, hi_val)
             self.test_slider.step = (hi_val - lo_val) / 500.
         else:
+            #print("3 ", self.slider_limits, self.test_transition, self.test_slider.start, self.test_slider.end,
+            #      self.test_slider.value)
             lo_val = self.test_slider.value[0]
             hi_val = self.test_slider.value[1]
 
+        #print("4 ", self.slider_limits, self.test_transition, self.test_slider.start, self.test_slider.end,
+        #      self.test_slider.value)
         np_array = np.array(test_q)
         selected_q = [q for q in np_array if lo_val <= q <= hi_val]
         h_q, bins = np.histogram(selected_q, bins=50, range=(lo_val, hi_val))

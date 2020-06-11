@@ -8,6 +8,7 @@ from exploreFocalPlane import exploreFocalPlane
 from exploreRaft import exploreRaft
 from eTraveler.clientAPI.connection import Connection
 from get_steps_schema import get_steps_schema
+import notebook_loader
 from bokeh.models import LinearAxis, Grid, ContinuousColorMapper, LinearColorMapper, ColorBar, \
     LogTicker
 from bokeh.plotting import figure
@@ -45,6 +46,9 @@ Usage modes:
 class renderFocalPlane():
 
     def __init__(self, db='Prod', server='Prod'):
+
+        sys.meta_path.append(notebook_loader.NotebookFinder())
+
         # define primitives for amps, sensors and rafts
 
         self.amp_width = 1 / 8.

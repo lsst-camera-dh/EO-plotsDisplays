@@ -269,8 +269,9 @@ class renderFocalPlane():
                                 "R20", "R21", "R22", "R23", "R24",
                                 "R10", "R11", "R12", "R13", "R14",
                                 "R00", "R01", "R02", "R03", "R04" ]
-#        self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
-        self.amp_ordering = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        # amp fiddling - restored to 15, 14, ...  2020-07-22 to match LCA-13381
+        self.amp_ordering = [15, 14, 13, 12, 11, 10, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
+        #self.amp_ordering = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
         self.corner_raft_amp_ordering_guider = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
         self.corner_raft_amp_ordering_wave = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
@@ -1363,8 +1364,8 @@ class renderFocalPlane():
 
                 for ccd in range(num_ccd):
 
-                    #for amp in range(16):
-                    for amp in self.amp_ordering:
+                    for amp in range(16):    # fiddling amp order
+                    #for amp in self.amp_ordering:
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
 
@@ -1377,8 +1378,8 @@ class renderFocalPlane():
                         raft_slot.append(self.raft_slot_names[raft])
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
-                        #amp_number.append(self.amp_ordering[amp]+1)
-                        amp_number.append(amp+1)
+                        amp_number.append(self.amp_ordering[amp]+1)  # fiddling amp order
+                        #amp_number.append(amp+1)
             elif self.solo_corner_raft == True and self.solo_raft_mode == True and False:  # not needed?
                 for ccd in [1, 2, 5]:
                     for amp in range(16):

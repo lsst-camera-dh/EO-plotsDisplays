@@ -99,7 +99,7 @@ class renderFocalPlane():
         self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
                                    button_type="success",
                                    menu=self.menu_modes, width=150)
-        self.drop_modes.on_change('value', self.update_dropdown_modes)
+        self.drop_modes.on_click(self.update_dropdown_modes)
 
         self.menu_solo_modes = [("Solo raft", "Solo raft"), ("Solo single CCD", "Solo single CCD")]
 
@@ -107,7 +107,7 @@ class renderFocalPlane():
                                    button_type="success",
                                    menu=self.menu_solo_modes, width=150)
 
-        self.drop_solo_modes.on_change('value', self.update_dropdown_solo_modes)
+        self.drop_solo_modes.on_click(self.update_dropdown_solo_modes)
 
         # set up the dropdown menu for links, along with available modes list
         self.menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
@@ -126,14 +126,14 @@ class renderFocalPlane():
 
         self.drop_links = Dropdown(label="Useful Links", button_type="success",
                                    menu=self.menu_links, width=200)
-        self.drop_links.js_on_change('value', self.drop_links_callback)
+        ###self.drop_links.js_on_change('value', self.drop_links_callback)
 
         self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=200)
-        self.drop_raft.on_change('value', self.update_dropdown_raft)
+        self.drop_raft.on_click(self.update_dropdown_raft)
 
         self.drop_ccd = Dropdown(label="Select CCD",
                                  button_type="warning", menu=[], width=200)
-        self.drop_ccd.on_change('value', self.update_dropdown_ccd)
+        self.drop_ccd.on_click(self.update_dropdown_ccd)
 
         # define buttons to toggle emulation mode, and to fetch a config txt file
         self.button = Button(label="Full Focal Plane", button_type="success", width=150)
@@ -155,7 +155,7 @@ class renderFocalPlane():
         # file into the ColumnDataSource, coupled with looking for a change on the ColumnDataSource
         self.file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
 
-        self.button_file.callback = CustomJS(args=dict(file_source=self.file_source), code="""
+        button_file_callback = CustomJS(args=dict(file_source=self.file_source), code="""
         function read_file(filename) {
             var reader = new FileReader();
             reader.onload = load_handler;
@@ -188,9 +188,10 @@ class renderFocalPlane():
         }
         input.click();
         """)
+        #self.button_file.js_on_change('value', button_file_callback)
 
         self.test_slider = RangeSlider(title="Test Value Range", start=0, end=100, value=(0, 100),
-                                       callback_policy="mouseup", callback_throttle=300, width=900,
+                                        width=900,
                                        format="0[.]0000")
 
         self.test_slider.on_change('value_throttled', self.test_slider_select)
@@ -241,13 +242,13 @@ class renderFocalPlane():
 
         # drop down menu of test names, taking the menu from self.menu_test
         self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=150)
-        self.drop_test.on_change('value', self.update_dropdown_test)
+        self.drop_test.on_click(self.update_dropdown_test)
 
         # drop down menu of test names, taking the menu from self.menu_test
         self.menu_user_test = [("User", "User")]
         self.drop_user_test = Dropdown(label="Select User test", button_type="warning",
                                        menu=self.menu_user_test, width=150)
-        self.drop_user_test.on_change('value', self.update_dropdown_user_test)
+        self.drop_user_test.on_click(self.update_dropdown_user_test)
 
         self.interactors_range = row(self.slider_min, self.slider_max, self.slider_lims_reset)
 
@@ -757,8 +758,8 @@ class renderFocalPlane():
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
-    def update_dropdown_test(self, sattr, old, new):
-        new_test = self.drop_test.value
+    def update_dropdown_test(self, event):
+        new_test = event.item
         self.drop_test.label = "Test: " + new_test
         self.test_transition = True
         self.slider_limits["state"] = False
@@ -769,8 +770,8 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_user_test(self, sattr, old, new):
-        new_test = self.drop_user_test.value
+    def update_dropdown_user_test(self, event):
+        new_test = event.item
         self.drop_user_test.label = "Test: " + new_test
         self.test_transition = True
 
@@ -780,8 +781,8 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_ccd(self, sattr, old, new):
-        ccd_name = self.drop_ccd.value
+    def update_dropdown_ccd(self, event):
+        ccd_name = event.item
         ccd_slot = self.slot_mapping[ccd_name]
         self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
         self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
@@ -795,9 +796,9 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_raft(self, sattr, old, new):
+    def update_dropdown_raft(self, event):
         # Update from raft_list for now - need to add case where we have all rafts.
-        raft_name = self.drop_raft.value
+        raft_name = event.item
         raft_slot_mapping = {pair[0]: pair[1] for pair in self.current_FP_raft_list}
         raft_slot = raft_slot_mapping[raft_name]
         #self.drop_raft.menu = []
@@ -814,8 +815,8 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_modes(self, sattr, old, new):
-        new_mode = self.drop_modes.value
+    def update_dropdown_modes(self, event):
+        new_mode = event.item
 
         self.single_raft_mode = False
         self.single_ccd_mode = False
@@ -905,8 +906,8 @@ class renderFocalPlane():
 
         self.drop_modes.label = "Mode: " + new_mode
 
-    def update_dropdown_solo_modes(self, sattr, old, new):
-        new_mode = self.drop_solo_modes.value
+    def update_dropdown_solo_modes(self, event):
+        new_mode = event.item
 
         self.solo_raft_mode = False
         self.solo_ccd_mode = False

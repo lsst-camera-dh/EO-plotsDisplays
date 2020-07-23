@@ -122,12 +122,12 @@ class renderFocalPlane():
                             "=any&Site=any&Label=25&Run+min=&Run+max=&submit=Filter&dataSourceMode=Dev")
                            ]
 
-        self.drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,
+        self.drop_links_callback = CustomJS(code="""var url=event.item;window.open(url,
           '_blank')""")
 
         self.drop_links = Dropdown(label="Useful Links", button_type="success",
                                    menu=self.menu_links, width=200)
-        #self.drop_links.js_on_change("event", self.drop_links_callback)
+        self.drop_links.js_on_event('menu_item_click', self.drop_links_callback)
 
         self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=200)
         self.drop_raft.on_click(self.update_dropdown_raft)
@@ -189,7 +189,7 @@ class renderFocalPlane():
         }
         input.click();
         """)
-        #self.button_file.js_on_change('value', button_file_callback)
+        self.button_file.js_on_click(button_file_callback)
 
         self.test_slider = RangeSlider(title="Test Value Range", start=0, end=100, value=(0, 100),
                                         width=900,
@@ -1437,6 +1437,7 @@ class renderFocalPlane():
 
                         ccd_slot.append(slot)
                         amp_number.append(new_amp + 1)
+                        test_q.append(run_data[ccd * 16 + self.amp_ordering[new_amp]])  # fiddling amp order
 
                         #if ccd == ccd_order[2]:
                         #   new_amp = amp

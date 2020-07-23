@@ -122,11 +122,12 @@ class renderFocalPlane():
                             "=any&Site=any&Label=25&Run+min=&Run+max=&submit=Filter&dataSourceMode=Dev")
                            ]
 
-        self.drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank')""")
+        self.drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,
+          '_blank')""")
 
         self.drop_links = Dropdown(label="Useful Links", button_type="success",
                                    menu=self.menu_links, width=200)
-        ###self.drop_links.js_on_change('value', self.drop_links_callback)
+        #self.drop_links.js_on_change("event", self.drop_links_callback)
 
         self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=200)
         self.drop_raft.on_click(self.update_dropdown_raft)
@@ -1322,7 +1323,7 @@ class renderFocalPlane():
                 self.current_test = self.previous_test
                 run_data = self.get_testq(raft_slot=raft_slot_current)
 
-            test_q.extend(run_data)
+            #test_q.extend(run_data)   # test remapping the test value order
 
             num_ccd = 9
             if not (self.single_ccd_mode or self.solo_ccd_mode):
@@ -1379,6 +1380,7 @@ class renderFocalPlane():
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
                         amp_number.append(self.amp_ordering[amp]+1)  # fiddling amp order
+                        test_q.append(run_data[ccd*16+self.amp_ordering[amp]])  # fiddling amp order
                         #amp_number.append(amp+1)
             elif self.solo_corner_raft == True and self.solo_raft_mode == True and False:  # not needed?
                 for ccd in [1, 2, 5]:

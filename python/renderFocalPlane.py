@@ -122,7 +122,7 @@ class renderFocalPlane():
                             "=any&Site=any&Label=25&Run+min=&Run+max=&submit=Filter&dataSourceMode=Dev")
                            ]
 
-        self.drop_links_callback = CustomJS(code="""var url=event.item;window.open(url,
+        self.drop_links_callback = CustomJS(code="""const item=this.item; var url=item;window.open(url,
           '_blank')""")
 
         self.drop_links = Dropdown(label="Useful Links", button_type="success",

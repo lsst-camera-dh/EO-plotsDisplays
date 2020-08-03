@@ -1437,7 +1437,7 @@ class renderFocalPlane():
 
                         ccd_slot.append(slot)
                         amp_number.append(new_amp + 1)
-                        test_q.append(run_data[ccd * 16 + self.amp_ordering[new_amp]])  # fiddling amp order
+                        test_q.append(run_data[int(ccd_idx/2) * 16 + self.amp_ordering[new_amp]])  # fiddling amp order
 
                         #if ccd == ccd_order[2]:
                         #   new_amp = amp

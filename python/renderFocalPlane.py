@@ -274,13 +274,13 @@ class renderFocalPlane():
         self.amp_ordering = [15, 14, 13, 12, 11, 10, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
         #self.amp_ordering = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
-        self.corner_raft_amp_ordering_guider = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        self.corner_raft_amp_ordering_guider = [15, 14, 13, 12, 11, 10, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
         self.corner_raft_amp_ordering_wave = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
         self.ccd_ordering = ['S00','S01','S02',
                              'S10','S11','S12',
                              'S20','S21','S22']
         self.corner_raft_ccd_ordering = ['ccd1','ccd1','ccd2','ccd2','guider','guider']
-        self.corner_raft_ccd_translate = {"ccd1": "SG0", "ccd2": "SG1", "guider": "SW"}
+        self.corner_raft_ccd_translate = {"ccd1": "SW0", "ccd2": "SW1", "guider": "SG"}
 
         # booleans for whether a slot on the FP is occupied
         self.raft_is_there = [False] * 25
@@ -436,6 +436,7 @@ class renderFocalPlane():
 
         test_list = []
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
+        #CR_ccd_idx = {"SW0":0, "SW1":1, "SG0":2, "SG1":2.5}
         CR_ccd_idx = {"SG0":0, "SG1":1, "SW0":2, "SW1":2.5}
 
         # fetch the test from the cache
@@ -484,7 +485,7 @@ class renderFocalPlane():
 
                 t_end = 16
                 t_start = 0
-                if ccd == "SW0" or ccd == "SW1":
+                if ccd == "SW0" or ccd == "SW1":   #SW has only 8 real amps; rest padded with -1
                     t_end = 8
 
                 for i in range(t_start, t_end):
@@ -1400,52 +1401,48 @@ class renderFocalPlane():
                         amp_number.append(self.amp_ordering[amp]+1)
             else:  # get the CR sensor positions
                 CR_slot = CR_content[CR_slot_index[raft]]
-                ccd_order = [CR_slot[sensor]["pos"] for sensor in CR_slot]
-
+                name_order_kludge = [2, 3, 0]   # the order in ccd_run_list for SG0, SG1, SW0
                 ccd_idx = 0
-                for ccd in ccd_order:
-                    if ccd == ccd_order[2]:
+
+                for iccd, slot_name in enumerate(["SG0", "SG1", "SW"]):
+                    ccd = CR_slot[slot_name]["pos"]
+
+                    if slot_name == "SW":
                         amp_order = self.corner_raft_amp_ordering_wave
                     else:
                         amp_order = self.corner_raft_amp_ordering_guider
 
-                    for amp in amp_order:
+                    for i_amp, amp in enumerate(amp_order):
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
 
-                        a_cen_x = cen_x + self.amp_center_x[amp]
-                        a_cen_y = cen_y + self.amp_center_y[amp]
+                        a_cen_x = cen_x + self.amp_center_x[i_amp]
+                        a_cen_y = cen_y + self.amp_center_y[i_amp]
 
                         x.append(a_cen_x)
                         y.append(a_cen_y)
                         raft_name.append(self.installed_raft_names[raft])
                         raft_slot.append(self.raft_slot_names[raft])
-                        ccd_name.append(ccd_list[ccd_idx][0])
-                        eT_name = ccd_list[ccd_idx][1]
-                        slot_name = self.corner_raft_ccd_translate[eT_name]
+                        ccd_n = ccd_list_run[name_order_kludge[iccd]][0]
 
                         # label the WFS as 2 units with amps 1-8
                         new_amp = amp
-                        if slot_name == "SW":
+                        if "SW" in slot_name:
                             if amp > 7:
                                 slot = slot_name + "1"
                                 new_amp = amp - 8
+                                ccd_n = ccd_list_run[name_order_kludge[iccd]+1][0]
                             else:
                                 slot = slot_name + "0"
                         else:
                             slot = slot_name
 
+                        ccd_name.append(ccd_n)
                         ccd_slot.append(slot)
                         amp_number.append(new_amp + 1)
-                        test_q.append(run_data[int(ccd_idx/2) * 16 + new_amp])  # fiddling amp order
+                        test_val = run_data[int(ccd_idx/2) * 16 + amp]
+                        test_q.append(test_val)  # fiddling amp order
 
-                        #if ccd == ccd_order[2]:
-                        #   new_amp = amp
-                        #    if amp > 7:
-                        #        new_amp = 15 - amp
-                        #    amp_number.append(self.corner_raft_amp_ordering_wave[new_amp] + 1)
-                        #else:
-                        #    amp_number.append(self.corner_raft_amp_ordering_guider[amp] + 1)
                     ccd_idx += 2
 
         ready_data_time = time.time() - enter_time

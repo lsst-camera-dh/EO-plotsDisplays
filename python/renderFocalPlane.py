@@ -380,8 +380,17 @@ class renderFocalPlane():
     def set_db(self, run=None):
         # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
         self.dbsel = "Prod"
-        if isinstance(run,str) and 'D' in run:
+        if isinstance(run,str) and 'D' in run.upper():
             self.dbsel = "Dev"
+
+    def chk_11974(self, run=None):
+        outcome = True     # use prod
+        if isinstance(run, str) and 'D' in run.upper():
+            outcome = False
+        elif int(run) < 11974:
+            outcome = False
+
+        return outcome
 
     def get_testq(self, raft_slot=None):
         """
@@ -435,9 +444,16 @@ class renderFocalPlane():
                 avail_tests = self.get_step.get_test_info(runData=data)
                 self.menu_test_cache[self.current_run] = [(t, t) for t in avail_tests]
 
-        test_list = []
+        found_test = False
+        for tests in self.menu_test_cache[self.current_run]:
+            if tests[0] == self.current_test:
+                found_test = True
+                break
+
+        if not found_test:  # if user has asked for non-existent test via CL
+            self.current_test = self.menu_test_cache[self.current_run][0][0]
+
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
-        #CR_ccd_idx = {"SW0":0, "SW1":1, "SG0":2, "SG1":2.5}
         CR_ccd_idx = {"SG0":0, "SG1":1, "SW0":2, "SW1":2.5}
 
         # fetch the test from the cache
@@ -520,7 +536,7 @@ class renderFocalPlane():
         if self.emulate is False:
             if self.full_FP_mode is True:
 #                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
-                if int(self.current_run) > 11974:
+                if self.chk_11974(self.current_run):
                     raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=self.current_run)
                 else:
                     raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
@@ -711,7 +727,7 @@ class renderFocalPlane():
             # use PROD hardware description due to dev focal plane hardware mismatch
             db_k = self.dbsel
             use_run = self.current_run
-            if not self.emulate and int(self.current_run) <= 11974:
+            if not self.emulate and not self.chk_11974(self.current_run):
                 db_k = "Prod"
                 use_run = 11974
             raftContents = self.connections["eR"][db_k].raftContents(
@@ -863,7 +879,7 @@ class renderFocalPlane():
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate and int(self.current_run) <= 11974:
+                if not self.emulate and not self.chk_11974(self.current_run):
                     db_k = "Prod"
                     use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
@@ -933,7 +949,7 @@ class renderFocalPlane():
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate and int(self.current_run) <= 11974:
+                if not self.emulate and not self.chk_11974(self.current_run):
                     db_k = "Prod"
                     use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
@@ -1320,7 +1336,7 @@ class renderFocalPlane():
                 # Kludge to use prod geometry for dev runs for full focal plane
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate and int(self.current_run) <= 11974:
+                if not self.emulate and not self.chk_11974(self.current_run):
                     db_k = "Prod"
                     use_run = 11974
                 ccd_list_run = self.connections["eR"][db_k].raftContents(

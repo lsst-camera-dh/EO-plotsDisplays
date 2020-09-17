@@ -99,7 +99,7 @@ class renderFocalPlane():
         self.drop_modes = Dropdown(label="Mode: " + self.menu_modes[self.current_mode][0],
                                    button_type="success",
                                    menu=self.menu_modes, width=150)
-        self.drop_modes.on_change('value', self.update_dropdown_modes)
+        self.drop_modes.on_click(self.update_dropdown_modes)
 
         self.menu_solo_modes = [("Solo raft", "Solo raft"), ("Solo single CCD", "Solo single CCD")]
 
@@ -107,7 +107,7 @@ class renderFocalPlane():
                                    button_type="success",
                                    menu=self.menu_solo_modes, width=150)
 
-        self.drop_solo_modes.on_change('value', self.update_dropdown_solo_modes)
+        self.drop_solo_modes.on_click(self.update_dropdown_solo_modes)
 
         # set up the dropdown menu for links, along with available modes list
         self.menu_links = [("Documentation", "https://confluence.slac.stanford.edu/x/6FNSDg"),
@@ -122,18 +122,19 @@ class renderFocalPlane():
                             "=any&Site=any&Label=25&Run+min=&Run+max=&submit=Filter&dataSourceMode=Dev")
                            ]
 
-        self.drop_links_callback = CustomJS(code="""var url=cb_obj.value;window.open(url,'_blank')""")
+        self.drop_links_callback = CustomJS(code="""const item=this.item; var url=item;window.open(url,
+          '_blank')""")
 
         self.drop_links = Dropdown(label="Useful Links", button_type="success",
                                    menu=self.menu_links, width=200)
-        self.drop_links.js_on_change('value', self.drop_links_callback)
+        self.drop_links.js_on_event('menu_item_click', self.drop_links_callback)
 
         self.drop_raft = Dropdown(label="Select Raft", button_type="warning", menu=[], width=200)
-        self.drop_raft.on_change('value', self.update_dropdown_raft)
+        self.drop_raft.on_click(self.update_dropdown_raft)
 
         self.drop_ccd = Dropdown(label="Select CCD",
                                  button_type="warning", menu=[], width=200)
-        self.drop_ccd.on_change('value', self.update_dropdown_ccd)
+        self.drop_ccd.on_click(self.update_dropdown_ccd)
 
         # define buttons to toggle emulation mode, and to fetch a config txt file
         self.button = Button(label="Full Focal Plane", button_type="success", width=150)
@@ -155,7 +156,7 @@ class renderFocalPlane():
         # file into the ColumnDataSource, coupled with looking for a change on the ColumnDataSource
         self.file_source = ColumnDataSource({'file_contents': [], 'file_name': []})
 
-        self.button_file.callback = CustomJS(args=dict(file_source=self.file_source), code="""
+        button_file_callback = CustomJS(args=dict(file_source=self.file_source), code="""
         function read_file(filename) {
             var reader = new FileReader();
             reader.onload = load_handler;
@@ -188,9 +189,10 @@ class renderFocalPlane():
         }
         input.click();
         """)
+        self.button_file.js_on_click(button_file_callback)
 
         self.test_slider = RangeSlider(title="Test Value Range", start=0, end=100, value=(0, 100),
-                                       callback_policy="mouseup", callback_throttle=300, width=900,
+                                        width=900,
                                        format="0[.]0000")
 
         self.test_slider.on_change('value_throttled', self.test_slider_select)
@@ -241,13 +243,13 @@ class renderFocalPlane():
 
         # drop down menu of test names, taking the menu from self.menu_test
         self.drop_test = Dropdown(label="Select test", button_type="warning", menu=self.menu_test, width=150)
-        self.drop_test.on_change('value', self.update_dropdown_test)
+        self.drop_test.on_click(self.update_dropdown_test)
 
         # drop down menu of test names, taking the menu from self.menu_test
         self.menu_user_test = [("User", "User")]
         self.drop_user_test = Dropdown(label="Select User test", button_type="warning",
                                        menu=self.menu_user_test, width=150)
-        self.drop_user_test.on_change('value', self.update_dropdown_user_test)
+        self.drop_user_test.on_click(self.update_dropdown_user_test)
 
         self.interactors_range = row(self.slider_min, self.slider_max, self.slider_lims_reset)
 
@@ -268,16 +270,17 @@ class renderFocalPlane():
                                 "R20", "R21", "R22", "R23", "R24",
                                 "R10", "R11", "R12", "R13", "R14",
                                 "R00", "R01", "R02", "R03", "R04" ]
-#        self.amp_ordering = [15,14,13,12,11,10,9,8,0,1,2,3,4,5,6,7]
-        self.amp_ordering = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        # amp fiddling - restored to 15, 14, ...  2020-07-22 to match LCA-13381
+        self.amp_ordering = [15, 14, 13, 12, 11, 10, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
+        #self.amp_ordering = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
-        self.corner_raft_amp_ordering_guider = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        self.corner_raft_amp_ordering_guider = [15, 14, 13, 12, 11, 10, 9, 8, 0, 1, 2, 3, 4, 5, 6, 7]
         self.corner_raft_amp_ordering_wave = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
         self.ccd_ordering = ['S00','S01','S02',
                              'S10','S11','S12',
                              'S20','S21','S22']
         self.corner_raft_ccd_ordering = ['ccd1','ccd1','ccd2','ccd2','guider','guider']
-        self.corner_raft_ccd_translate = {"ccd1": "SG0", "ccd2": "SG1", "guider": "SW"}
+        self.corner_raft_ccd_translate = {"ccd1": "SW0", "ccd2": "SW1", "guider": "SG"}
 
         # booleans for whether a slot on the FP is occupied
         self.raft_is_there = [False] * 25
@@ -377,8 +380,17 @@ class renderFocalPlane():
     def set_db(self, run=None):
         # check the run number again for dev or prod (for mixed mode emulation where runs could be either)
         self.dbsel = "Prod"
-        if isinstance(run,str) and 'D' in run:
+        if isinstance(run,str) and 'D' in run.upper():
             self.dbsel = "Dev"
+
+    def chk_11974(self, run=None):
+        outcome = True     # use prod
+        if isinstance(run, str) and 'D' in run.upper():
+            outcome = False
+        elif int(run) < 11974:
+            outcome = False
+
+        return outcome
 
     def get_testq(self, raft_slot=None):
         """
@@ -409,8 +421,9 @@ class renderFocalPlane():
                                   range_limits=self.slider_limits)
 
         if BOT:
-            if self.current_run not in self.test_cache or raft_index not in \
-                    self.test_cache[self.current_run][self.current_test]:
+            #if self.current_run not in self.test_cache or raft_index not in \
+            #       self.test_cache[self.current_run][self.current_test]:
+            if self.current_run not in self.test_cache:
                 # use get_EO to fetch the test quantities from the eT results database
                 raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
                                                                                    run=self.current_run)
@@ -431,7 +444,15 @@ class renderFocalPlane():
                 avail_tests = self.get_step.get_test_info(runData=data)
                 self.menu_test_cache[self.current_run] = [(t, t) for t in avail_tests]
 
-        test_list = []
+        found_test = False
+        for tests in self.menu_test_cache[self.current_run]:
+            if tests[0] == self.current_test:
+                found_test = True
+                break
+
+        if not found_test:  # if user has asked for non-existent test via CL
+            self.current_test = self.menu_test_cache[self.current_run][0][0]
+
         ccd_idx = {"S00":0, "S01":1, "S02":2, "S10":3, "S11":4, "S12":5, "S20":6, "S21":7, "S22":8 }
         CR_ccd_idx = {"SG0":0, "SG1":1, "SW0":2, "SW1":2.5}
 
@@ -454,15 +475,7 @@ class renderFocalPlane():
             test_list = [-1.]*len_raft
             if self.single_ccd_mode or self.solo_ccd_mode:
                 test_list = [-1.] * 16
-            try:
-                t = self.test_cache[self.current_run][self.current_test][raft_slot]
-            except KeyError:
-                #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
-                #               self.previous_test)
-                self.current_test = self.menu_test[0][0]
-                # self.drop_test.value = self.current_test
-                t = self.test_cache[self.current_run][self.current_test][raft_slot]
-                pass
+            t = self.test_cache[self.current_run][self.current_test][raft_slot]
 
             for ccd in t:
                 if (self.single_ccd_mode or self.solo_ccd_mode) and ccd != self.single_ccd_name[0][1]:
@@ -481,21 +494,14 @@ class renderFocalPlane():
 
                 t_end = 16
                 t_start = 0
-                if ccd == "SW0" or ccd == "SW1":
+                if ccd == "SW0" or ccd == "SW1":   #SW has only 8 real amps; rest padded with -1
                     t_end = 8
 
                 for i in range(t_start, t_end):
                     test_list[list_idx+i] = t[ccd][i]
 
         else:
-            try:
-                t = self.test_cache[self.current_run][self.current_raft][self.current_test]
-            except KeyError:
-                #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
-                #               self.previous_test)
-                self.current_test = self.menu_test[0][0]
-                # self.drop_test.value = self.current_test
-                t = self.test_cache[self.current_run][self.current_raft][self.current_test]
+            t = self.test_cache[self.current_run][self.current_raft][self.current_test]
 
             ccd_name = ""
             for ccd in t:
@@ -530,7 +536,10 @@ class renderFocalPlane():
         if self.emulate is False:
             if self.full_FP_mode is True:
 #                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
-                raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
+                if self.chk_11974(self.current_run):
+                    raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=self.current_run)
+                else:
+                    raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
                 self.current_FP_raft_list = raft_list
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
@@ -718,7 +727,7 @@ class renderFocalPlane():
             # use PROD hardware description due to dev focal plane hardware mismatch
             db_k = self.dbsel
             use_run = self.current_run
-            if not self.emulate:
+            if not self.emulate and not self.chk_11974(self.current_run):
                 db_k = "Prod"
                 use_run = 11974
             raftContents = self.connections["eR"][db_k].raftContents(
@@ -757,8 +766,8 @@ class renderFocalPlane():
             m_new = layout(self.interactors, l_new)
             self.layout.children = m_new.children
 
-    def update_dropdown_test(self, sattr, old, new):
-        new_test = self.drop_test.value
+    def update_dropdown_test(self, event):
+        new_test = event.item
         self.drop_test.label = "Test: " + new_test
         self.test_transition = True
         self.slider_limits["state"] = False
@@ -769,8 +778,8 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_user_test(self, sattr, old, new):
-        new_test = self.drop_user_test.value
+    def update_dropdown_user_test(self, event):
+        new_test = event.item
         self.drop_user_test.label = "Test: " + new_test
         self.test_transition = True
 
@@ -780,8 +789,8 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_ccd(self, sattr, old, new):
-        ccd_name = self.drop_ccd.value
+    def update_dropdown_ccd(self, event):
+        ccd_name = event.item
         ccd_slot = self.slot_mapping[ccd_name]
         self.single_ccd_name = [[ccd_name, ccd_slot, "Dummy REB"]]
         self.interactors = layout(row(self.button_exit, self.button_clear_cache, self.drop_links),
@@ -795,9 +804,9 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_raft(self, sattr, old, new):
+    def update_dropdown_raft(self, event):
         # Update from raft_list for now - need to add case where we have all rafts.
-        raft_name = self.drop_raft.value
+        raft_name = event.item
         raft_slot_mapping = {pair[0]: pair[1] for pair in self.current_FP_raft_list}
         raft_slot = raft_slot_mapping[raft_name]
         #self.drop_raft.menu = []
@@ -814,8 +823,8 @@ class renderFocalPlane():
         m_new = layout(self.interactors, l_new)
         self.layout.children = m_new.children
 
-    def update_dropdown_modes(self, sattr, old, new):
-        new_mode = self.drop_modes.value
+    def update_dropdown_modes(self, event):
+        new_mode = event.item
 
         self.single_raft_mode = False
         self.single_ccd_mode = False
@@ -870,7 +879,7 @@ class renderFocalPlane():
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate:
+                if not self.emulate and not self.chk_11974(self.current_run):
                     db_k = "Prod"
                     use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
@@ -905,8 +914,8 @@ class renderFocalPlane():
 
         self.drop_modes.label = "Mode: " + new_mode
 
-    def update_dropdown_solo_modes(self, sattr, old, new):
-        new_mode = self.drop_solo_modes.value
+    def update_dropdown_solo_modes(self, event):
+        new_mode = event.item
 
         self.solo_raft_mode = False
         self.solo_ccd_mode = False
@@ -940,7 +949,7 @@ class renderFocalPlane():
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate:
+                if not self.emulate and not self.chk_11974(self.current_run):
                     db_k = "Prod"
                     use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
@@ -1317,28 +1326,25 @@ class renderFocalPlane():
             try:
                 run_data = self.get_testq(raft_slot=raft_slot_current)
             except KeyError:
-                self.current_test = self.previous_test
-                run_data = self.get_testq(raft_slot=raft_slot_current)
-
-            test_q.extend(run_data)
+                #self.current_test = self.previous_test
+                #run_data = self.get_testq(raft_slot=raft_slot_current)
+                continue    # trying to handle case where raft is installed, but no data from it
 
             num_ccd = 9
             if not (self.single_ccd_mode or self.solo_ccd_mode):
 
+                # Kludge to use prod geometry for dev runs for full focal plane
+                db_k = self.dbsel
+                use_run = self.current_run
+                if not self.emulate and not self.chk_11974(self.current_run):
+                    db_k = "Prod"
+                    use_run = 11974
+                ccd_list_run = self.connections["eR"][db_k].raftContents(
+                    raftName=self.installed_raft_names[raft], run=use_run)
+
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
                     t_0_hierarchy = time.time()
-#                    ccd_list_run = self.connections["eR"][self.dbsel].raftContents(
-#                        raftName=self.installed_raft_names[raft],
-#                        run=self.current_run)
-                    # Kludge to use prod geometry for dev runs for full focal plane
-                    db_k = self.dbsel
-                    use_run = self.current_run
-                    if not self.emulate:
-                        db_k = "Prod"
-                        use_run = 11974
-                    ccd_list_run = self.connections["eR"][db_k].raftContents(
-                        raftName=self.installed_raft_names[raft], run=use_run)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy
                     r = self.ccd_content_cache.setdefault(self.current_run, {})
@@ -1362,8 +1368,8 @@ class renderFocalPlane():
 
                 for ccd in range(num_ccd):
 
-                    #for amp in range(16):
-                    for amp in self.amp_ordering:
+                    for amp in range(16):    # fiddling amp order
+                    #for amp in self.amp_ordering:
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
 
@@ -1376,8 +1382,9 @@ class renderFocalPlane():
                         raft_slot.append(self.raft_slot_names[raft])
                         ccd_name.append(ccd_list[ccd][0])
                         ccd_slot.append(ccd_list[ccd][1])
-                        #amp_number.append(self.amp_ordering[amp]+1)
-                        amp_number.append(amp+1)
+                        amp_number.append(self.amp_ordering[amp]+1)  # fiddling amp order
+                        test_q.append(run_data[ccd*16+self.amp_ordering[amp]])  # fiddling amp order
+                        #amp_number.append(amp+1)
             elif self.solo_corner_raft == True and self.solo_raft_mode == True and False:  # not needed?
                 for ccd in [1, 2, 5]:
                     for amp in range(16):
@@ -1396,51 +1403,48 @@ class renderFocalPlane():
                         amp_number.append(self.amp_ordering[amp]+1)
             else:  # get the CR sensor positions
                 CR_slot = CR_content[CR_slot_index[raft]]
-                ccd_order = [CR_slot[sensor]["pos"] for sensor in CR_slot]
-
+                name_order_kludge = [2, 3, 0]   # the order in ccd_run_list for SG0, SG1, SW0
                 ccd_idx = 0
-                for ccd in ccd_order:
-                    if ccd == ccd_order[2]:
+
+                for iccd, slot_name in enumerate(["SG0", "SG1", "SW"]):
+                    ccd = CR_slot[slot_name]["pos"]
+
+                    if slot_name == "SW":
                         amp_order = self.corner_raft_amp_ordering_wave
                     else:
                         amp_order = self.corner_raft_amp_ordering_guider
 
-                    for amp in amp_order:
+                    for i_amp, amp in enumerate(amp_order):
                         cen_x = raft_x + self.ccd_center_x[ccd]
                         cen_y = raft_y - self.ccd_center_y[ccd]
 
-                        a_cen_x = cen_x + self.amp_center_x[amp]
-                        a_cen_y = cen_y + self.amp_center_y[amp]
+                        a_cen_x = cen_x + self.amp_center_x[i_amp]
+                        a_cen_y = cen_y + self.amp_center_y[i_amp]
 
                         x.append(a_cen_x)
                         y.append(a_cen_y)
                         raft_name.append(self.installed_raft_names[raft])
                         raft_slot.append(self.raft_slot_names[raft])
-                        ccd_name.append(ccd_list[ccd_idx][0])
-                        eT_name = ccd_list[ccd_idx][1]
-                        slot_name = self.corner_raft_ccd_translate[eT_name]
+                        ccd_n = ccd_list_run[name_order_kludge[iccd]][0]
 
                         # label the WFS as 2 units with amps 1-8
                         new_amp = amp
-                        if slot_name == "SW":
+                        if "SW" in slot_name:
                             if amp > 7:
                                 slot = slot_name + "1"
                                 new_amp = amp - 8
+                                ccd_n = ccd_list_run[name_order_kludge[iccd]+1][0]
                             else:
                                 slot = slot_name + "0"
                         else:
                             slot = slot_name
 
+                        ccd_name.append(ccd_n)
                         ccd_slot.append(slot)
                         amp_number.append(new_amp + 1)
+                        test_val = run_data[int(ccd_idx/2) * 16 + amp]
+                        test_q.append(test_val)  # fiddling amp order
 
-                        #if ccd == ccd_order[2]:
-                        #   new_amp = amp
-                        #    if amp > 7:
-                        #        new_amp = 15 - amp
-                        #    amp_number.append(self.corner_raft_amp_ordering_wave[new_amp] + 1)
-                        #else:
-                        #    amp_number.append(self.corner_raft_amp_ordering_guider[amp] + 1)
                     ccd_idx += 2
 
         ready_data_time = time.time() - enter_time

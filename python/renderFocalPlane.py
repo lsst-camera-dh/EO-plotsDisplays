@@ -412,8 +412,9 @@ class renderFocalPlane():
                                   range_limits=self.slider_limits)
 
         if BOT:
-            if self.current_run not in self.test_cache or raft_index not in \
-                    self.test_cache[self.current_run][self.current_test]:
+            #if self.current_run not in self.test_cache or raft_index not in \
+            #       self.test_cache[self.current_run][self.current_test]:
+            if self.current_run not in self.test_cache:
                 # use get_EO to fetch the test quantities from the eT results database
                 raft_list, data = self.connections["get_EO"][self.dbsel].get_tests(site_type=self.EO_type,
                                                                                    run=self.current_run)
@@ -458,15 +459,7 @@ class renderFocalPlane():
             test_list = [-1.]*len_raft
             if self.single_ccd_mode or self.solo_ccd_mode:
                 test_list = [-1.] * 16
-            try:
-                t = self.test_cache[self.current_run][self.current_test][raft_slot]
-            except KeyError:
-                #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
-                #               self.previous_test)
-                self.current_test = self.menu_test[0][0]
-                # self.drop_test.value = self.current_test
-                t = self.test_cache[self.current_run][self.current_test][raft_slot]
-                pass
+            t = self.test_cache[self.current_run][self.current_test][raft_slot]
 
             for ccd in t:
                 if (self.single_ccd_mode or self.solo_ccd_mode) and ccd != self.single_ccd_name[0][1]:
@@ -492,14 +485,7 @@ class renderFocalPlane():
                     test_list[list_idx+i] = t[ccd][i]
 
         else:
-            try:
-                t = self.test_cache[self.current_run][self.current_raft][self.current_test]
-            except KeyError:
-                #raise KeyError(self.current_test + ": not available. Reverting to previous - " +
-                #               self.previous_test)
-                self.current_test = self.menu_test[0][0]
-                # self.drop_test.value = self.current_test
-                t = self.test_cache[self.current_run][self.current_raft][self.current_test]
+            t = self.test_cache[self.current_run][self.current_raft][self.current_test]
 
             ccd_name = ""
             for ccd in t:
@@ -534,7 +520,10 @@ class renderFocalPlane():
         if self.emulate is False:
             if self.full_FP_mode is True:
 #                raft_list = self.connections["eFP"][self.dbsel].focalPlaneContents(run=self.current_run)
-                raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
+                if int(self.current_run) > 11974:
+                    raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=self.current_run)
+                else:
+                    raft_list = self.connections["eFP"]["Prod"].focalPlaneContents(run=11974)
                 self.current_FP_raft_list = raft_list
             # figure out the raft name etc from the desired run number
             elif self.solo_raft_mode is True:
@@ -722,7 +711,7 @@ class renderFocalPlane():
             # use PROD hardware description due to dev focal plane hardware mismatch
             db_k = self.dbsel
             use_run = self.current_run
-            if not self.emulate:
+            if not self.emulate and int(self.current_run) <= 11974:
                 db_k = "Prod"
                 use_run = 11974
             raftContents = self.connections["eR"][db_k].raftContents(
@@ -874,7 +863,7 @@ class renderFocalPlane():
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate:
+                if not self.emulate and int(self.current_run) <= 11974:
                     db_k = "Prod"
                     use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
@@ -944,7 +933,7 @@ class renderFocalPlane():
                 # use prod hardware definition for full focal plane due to dev geometry mismatch
                 db_k = self.dbsel
                 use_run = self.current_run
-                if not self.emulate:
+                if not self.emulate and int(self.current_run) <= 11974:
                     db_k = "Prod"
                     use_run = 11974
                 raftContents = self.connections["eR"][db_k].raftContents(
@@ -1321,28 +1310,25 @@ class renderFocalPlane():
             try:
                 run_data = self.get_testq(raft_slot=raft_slot_current)
             except KeyError:
-                self.current_test = self.previous_test
-                run_data = self.get_testq(raft_slot=raft_slot_current)
-
-            #test_q.extend(run_data)   # test remapping the test value order
+                #self.current_test = self.previous_test
+                #run_data = self.get_testq(raft_slot=raft_slot_current)
+                continue    # trying to handle case where raft is installed, but no data from it
 
             num_ccd = 9
             if not (self.single_ccd_mode or self.solo_ccd_mode):
 
+                # Kludge to use prod geometry for dev runs for full focal plane
+                db_k = self.dbsel
+                use_run = self.current_run
+                if not self.emulate and int(self.current_run) <= 11974:
+                    db_k = "Prod"
+                    use_run = 11974
+                ccd_list_run = self.connections["eR"][db_k].raftContents(
+                    raftName=self.installed_raft_names[raft], run=use_run)
+
                 if self.current_run not in self.ccd_content_cache or self.installed_raft_names[raft] not in \
                         self.ccd_content_cache[self.current_run]:
                     t_0_hierarchy = time.time()
-#                    ccd_list_run = self.connections["eR"][self.dbsel].raftContents(
-#                        raftName=self.installed_raft_names[raft],
-#                        run=self.current_run)
-                    # Kludge to use prod geometry for dev runs for full focal plane
-                    db_k = self.dbsel
-                    use_run = self.current_run
-                    if not self.emulate:
-                        db_k = "Prod"
-                        use_run = 11974
-                    ccd_list_run = self.connections["eR"][db_k].raftContents(
-                        raftName=self.installed_raft_names[raft], run=use_run)
                     t_hierarchy = time.time() - t_0_hierarchy
                     timing_ccd_hierarchy += t_hierarchy
                     r = self.ccd_content_cache.setdefault(self.current_run, {})
